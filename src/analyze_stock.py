@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
+import argparse
 
 # 全局变量
 # 获取当前文件所在目录
@@ -14,16 +15,16 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 
 # 使用相对路径，确保跨平台兼容
-STOCK_CSV_PATH = os.path.join(project_root, 'data', 'stock.csv')
+DEFAULT_STOCK_CSV_PATH = os.path.join(project_root, 'data', 'stock.csv')
 CACHE_DIR = os.path.join(project_root, 'data', 'cache')
 OUTPUT_DIR = os.path.join(project_root, 'output')
 
-def read_stock_list():
+def read_stock_list(csv_path):
     """
     读取股票列表
     """
     try:
-        df = pd.read_csv(STOCK_CSV_PATH)
+        df = pd.read_csv(csv_path)
         stock_list = []
         for _, row in df.iterrows():
             stock_list.append({
@@ -235,8 +236,16 @@ def get_index_code_by_market(market):
     """
     if market == 'sh':
         return 'sh000002'  # 上证指数
-    else:
+    elif market == 'sz':
         return 'sz399107'  # 深证成指
+    elif market == 'kcb':
+        return 'sh000688'  # 科创50
+    elif market == 'cyb':
+        return 'sz399006'  # 创业板指
+    elif market == 'bj':
+        return 'bj899050'  # 北证50
+    else:
+        return 'sh000002'  # 默认上证指数
 
 def find_date_range(end_date, days, stock_data):
     """
@@ -567,7 +576,7 @@ def analyze_single_stock(stock):
         traceback.print_exc()
         return None
 
-def analyze_stocks():
+def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
     """
     分析股票
     """
@@ -575,7 +584,7 @@ def analyze_stocks():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     # 读取股票列表
-    stock_list = read_stock_list()
+    stock_list = read_stock_list(csv_path)
     print(f"读取到 {len(stock_list)} 支股票")
     
     # 获取当前日期
@@ -587,7 +596,11 @@ def analyze_stocks():
     os.makedirs(date_output_dir, exist_ok=True)
     
     # 准备CSV输出文件
-    output_file = os.path.join(date_output_dir, f"analysis_合并异动.csv")
+    # 从CSV路径提取文件名（不含扩展名）
+    csv_filename = os.path.basename(csv_path)
+    base_name = os.path.splitext(csv_filename)[0]
+    output_filename = f"analysis_{base_name}.csv"
+    output_file = os.path.join(date_output_dir, output_filename)
     
     # 写入CSV头部
     with open(output_file, 'w', encoding='utf-8') as f:
@@ -640,4 +653,12 @@ def analyze_stocks():
     print(f"合并异动: {output_file}")
 
 if __name__ == "__main__":
-    analyze_stocks()
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='股票异动分析工具')
+    parser.add_argument('--file', type=str, default=DEFAULT_STOCK_CSV_PATH, 
+                        help='指定股票标的CSV文件路径，默认使用 data/stock.csv')
+    
+    args = parser.parse_args()
+    
+    # 运行分析
+    analyze_stocks(args.file)

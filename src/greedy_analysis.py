@@ -3,20 +3,55 @@ import pandas as pd
 import argparse
 from datetime import datetime
 
+def get_market_from_code(stock_code):
+    """
+    根据股票代码判断所属市场
+    """
+    # 确保股票代码是6位
+    stock_code = str(stock_code).zfill(6)
+    
+    if stock_code.startswith('6'):
+        if stock_code.startswith('688'):
+            return 'kcb'  # 科创板
+        else:
+            return 'sh'  # 沪市
+    elif stock_code.startswith('3'):
+        return 'cyb'  # 创业板
+    elif stock_code.startswith('8'):
+        return 'bj'  # 北交所
+    else:
+        return 'sz'  # 深市
+
+def get_limit_up_percentage(market):
+    """
+    根据市场获取对应的涨停幅度
+    """
+    if market == 'sh' or market == 'sz':
+        return 1.10  # 沪市、深市主板 10%
+    elif market == 'kcb' or market == 'cyb' or market == 'bj':
+        return 1.20  # 科创板、创业板、北交所 20%
+    else:
+        return 1.10  # 默认 10%
+
 def parse_args():
     """
     解析命令行参数
     """
     parser = argparse.ArgumentParser(description='使用贪心算法分析股票收益')
-    parser.add_argument('--file', type=str, required=True, help='包含股票异动情况的文件夹路径')
+    parser.add_argument('--file', type=str, required=True, help='包含股票异动情况的文件路径或文件夹路径')
     return parser.parse_args()
 
-def analyze_stock_profit(folder_path):
+def analyze_stock_profit(path):
     """
     使用新算法分析股票收益
     """
-    # 构建文件路径
-    merged_df_path = os.path.join(folder_path, 'analysis_合并异动.csv')
+    # 检查路径是文件还是文件夹
+    if os.path.isfile(path):
+        # 如果是文件，直接使用
+        merged_df_path = path
+    else:
+        # 如果是文件夹，使用原来的逻辑
+        merged_df_path = os.path.join(path, 'analysis_合并异动.csv')
     
     # 读取数据
     try:
@@ -38,6 +73,15 @@ def analyze_stock_profit(folder_path):
         
         # 买入价（取第一个交易日的最后一个交易日价格）
         buy_price = group.loc[0, '最后交易日价格']
+        
+        # 获取股票代码
+        stock_code = group.loc[0, '股票代码']
+        
+        # 获取市场类型
+        market = get_market_from_code(stock_code)
+        
+        # 获取涨停幅度
+        limit_up_percentage = get_limit_up_percentage(market)
         
         # 初始化当前价格
         current_price = buy_price
@@ -61,7 +105,7 @@ def analyze_stock_profit(folder_path):
             limit_price = group.loc[i, '异动价格']
             
             # 计算潜在价格（涨停价）
-            potential_price = prev_current * 1.10
+            potential_price = prev_current * limit_up_percentage
             
             # 计算当日可能达到的最高价（涨停价与限制价的较小值）
             current_price = min(limit_price, potential_price)
@@ -114,20 +158,16 @@ def main():
     """
     # 解析命令行参数
     args = parse_args()
-    folder_path = args.file
+    path = args.file
     
-    # 验证文件夹路径
-    if not os.path.exists(folder_path):
-        print(f"文件夹 {folder_path} 不存在")
-        return
-    
-    if not os.path.isdir(folder_path):
-        print(f"路径 {folder_path} 不是一个文件夹")
+    # 验证路径是否存在
+    if not os.path.exists(path):
+        print(f"路径 {path} 不存在")
         return
     
     # 分析股票收益
     print("正在分析股票收益...")
-    results = analyze_stock_profit(folder_path)
+    results = analyze_stock_profit(path)
     
     if not results:
         print("未找到有效的股票数据")
@@ -165,7 +205,17 @@ def main():
         print(f"   涨停开始日期: {row['涨停开始日期']}")
     
     # 保存结果到CSV文件
-    output_file = os.path.join(folder_path, '最大收益计算结果.csv')
+    if os.path.isdir(path):
+        # 如果是文件夹，使用greedy前缀
+        output_file = os.path.join(path, 'greedy_最大收益计算结果.csv')
+    else:
+        # 如果是文件，使用greedy前缀 + 原文件名
+        output_dir = os.path.dirname(path)
+        original_filename = os.path.basename(path)
+        base_name = os.path.splitext(original_filename)[0]
+        output_filename = f"greedy_{base_name}.csv"
+        output_file = os.path.join(output_dir, output_filename)
+    
     results_df.to_csv(output_file, index=False, encoding='utf-8-sig')
     print(f"\n结果已保存到 '{output_file}'")
 
