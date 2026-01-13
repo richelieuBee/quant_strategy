@@ -185,39 +185,97 @@ def main():
     print("-" * 120)
     
     for i, (_, row) in enumerate(results_df.iterrows(), 1):
-        print(f"{i:<4} {row['股票名称']:<10} {str(row['股票代码']).zfill(6):<10} "
-              f"{row['最大收益率']:<10.2f}% 第{row['最佳卖出日']:<3}天 "
-              f"{row['最佳卖出价']:<10.2f} {row['买入价']:<10.2f} "
-              f"{row['最大连续涨停天数']:<12} {row['涨停开始日期']:<12}")
+        try:
+            # 处理可能为None的字段
+            stock_name = row.get('股票名称', '未知')
+            stock_code = row.get('股票代码')
+            stock_code_str = str(stock_code).zfill(6) if stock_code is not None else '未知'
+            max_return = row.get('最大收益率', 0)
+            best_sell_day = row.get('最佳卖出日', 0)
+            best_sell_price = row.get('最佳卖出价', 0)
+            buy_price = row.get('买入价', 0)
+            max_consecutive = row.get('最大连续涨停天数', 0)
+            start_date = row.get('涨停开始日期', '未知')
+            
+            # 确保所有值都不是None
+            stock_name = stock_name or '未知'
+            stock_code_str = stock_code_str or '未知'
+            max_return = max_return or 0
+            best_sell_day = best_sell_day or 0
+            best_sell_price = best_sell_price or 0
+            buy_price = buy_price or 0
+            max_consecutive = max_consecutive or 0
+            start_date = start_date or '未知'
+            
+            print(f"{i:<4} {stock_name:<10} {stock_code_str:<10} "
+                  f"{max_return:<10.2f}% 第{best_sell_day:<3}天 "
+                  f"{best_sell_price:<10.2f} {buy_price:<10.2f} "
+                  f"{max_consecutive:<12} {start_date:<12}")
+        except Exception as e:
+            print(f"{i:<4} 数据异常: {e}")
+            continue
     
     print("\n" + "=" * 120)
     
     # 输出前三名详细信息
     print("\n前三名详细分析：")
-    for i, (_, row) in enumerate(results_df.head(3).iterrows(), 1):
-        print(f"\n{i}. {row['股票名称']} ({str(row['股票代码']).zfill(6)}):")
-        print(f"   买入价: {row['买入价']:.2f}元")
-        print(f"   最佳卖出日: 第{row['最佳卖出日']}天 ({row['最佳卖出日期']})")
-        print(f"   最佳卖出价: {row['最佳卖出价']:.2f}元")
-        print(f"   最大收益率: {row['最大收益率']:.2f}%")
-        print(f"   绝对收益: {row['最佳卖出价'] - row['买入价']:.2f}元")
-        print(f"   最大连续涨停天数: {row['最大连续涨停天数']}")
-        print(f"   涨停开始日期: {row['涨停开始日期']}")
+    try:
+        for i, (_, row) in enumerate(results_df.head(3).iterrows(), 1):
+            try:
+                # 处理可能为None的字段
+                stock_name = row.get('股票名称', '未知')
+                stock_code = row.get('股票代码')
+                stock_code_str = str(stock_code).zfill(6) if stock_code is not None else '未知'
+                buy_price = row.get('买入价', 0)
+                best_sell_day = row.get('最佳卖出日', 0)
+                best_sell_date = row.get('最佳卖出日期', '未知')
+                best_sell_price = row.get('最佳卖出价', 0)
+                max_return = row.get('最大收益率', 0)
+                max_consecutive = row.get('最大连续涨停天数', 0)
+                start_date = row.get('涨停开始日期', '未知')
+                
+                # 确保所有值都不是None
+                stock_name = stock_name or '未知'
+                stock_code_str = stock_code_str or '未知'
+                buy_price = buy_price or 0
+                best_sell_day = best_sell_day or 0
+                best_sell_date = best_sell_date or '未知'
+                best_sell_price = best_sell_price or 0
+                max_return = max_return or 0
+                max_consecutive = max_consecutive or 0
+                start_date = start_date or '未知'
+                
+                print(f"\n{i}. {stock_name} ({stock_code_str}):")
+                print(f"   买入价: {buy_price:.2f}元")
+                print(f"   最佳卖出日: 第{best_sell_day}天 ({best_sell_date})")
+                print(f"   最佳卖出价: {best_sell_price:.2f}元")
+                print(f"   最大收益率: {max_return:.2f}%")
+                print(f"   绝对收益: {best_sell_price - buy_price:.2f}元")
+                print(f"   最大连续涨停天数: {max_consecutive}")
+                print(f"   涨停开始日期: {start_date}")
+            except Exception as e:
+                print(f"\n{i}. 数据异常: {e}")
+                continue
+    except Exception as e:
+        print(f"输出详细信息时出错: {e}")
     
     # 保存结果到CSV文件
-    if os.path.isdir(path):
-        # 如果是文件夹，使用greedy前缀
-        output_file = os.path.join(path, 'greedy_最大收益计算结果.csv')
-    else:
-        # 如果是文件，使用greedy前缀 + 原文件名
-        output_dir = os.path.dirname(path)
-        original_filename = os.path.basename(path)
-        base_name = os.path.splitext(original_filename)[0]
-        output_filename = f"greedy_{base_name}.csv"
-        output_file = os.path.join(output_dir, output_filename)
-    
-    results_df.to_csv(output_file, index=False, encoding='utf-8-sig')
-    print(f"\n结果已保存到 '{output_file}'")
+    try:
+        if os.path.isdir(path):
+            # 如果是文件夹，使用greedy前缀
+            output_file = os.path.join(path, 'greedy_最大收益计算结果.csv')
+        else:
+            # 如果是文件，使用greedy前缀 + 原文件名
+            output_dir = os.path.dirname(path)
+            original_filename = os.path.basename(path)
+            base_name = os.path.splitext(original_filename)[0]
+            output_filename = f"greedy_{base_name}.csv"
+            output_file = os.path.join(output_dir, output_filename)
+        
+        results_df.to_csv(output_file, index=False, encoding='utf-8-sig')
+        print(f"\n结果已保存到 '{output_file}'")
+    except Exception as e:
+        print(f"保存结果时出错: {e}")
 
 if __name__ == "__main__":
     main()

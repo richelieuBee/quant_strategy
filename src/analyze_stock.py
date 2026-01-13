@@ -258,6 +258,9 @@ def find_date_range(end_date, days, stock_data):
     
     # 获取今天的日期，只保留日期部分
     today = datetime.now().date()
+    # 获取当前时间，判断是否在15点之前
+    now = datetime.now()
+    is_before_15 = now.hour < 15
     
     # 安全检查：防止日期超出范围
     min_date = datetime(2000, 1, 1).date()  # 设置一个合理的最小日期
@@ -266,6 +269,8 @@ def find_date_range(end_date, days, stock_data):
     print(f"结束日期: {end_date.strftime('%Y-%m-%d')}")
     print(f"需要倒数天数: {days}")
     print(f"开始从: {current_date} 倒数")
+    print(f"当前时间: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"是否在15点之前: {is_before_15}")
     
     # 创建股票数据日期集合，方便快速查询，只保留日期部分
     stock_dates = set()
@@ -285,26 +290,51 @@ def find_date_range(end_date, days, stock_data):
     while cnt > 0 and iteration < max_iterations:
         iteration += 1
         # 检查是否是过去日期，如果当天是交易日，无论任何执行都默认今天是未来时间
-        if current_date < today:
-            # 检查是否有交易数据
-            if current_date in stock_dates:
-                cnt -= 1
-                print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
-                # 找到交易日后，继续倒数
-                current_date = current_date - timedelta(days=1)
+        # 根据是否在15点之前调整判断逻辑
+        if is_before_15:
+            # 15点之前，今天视为未来时间
+            if current_date < today:
+                # 检查是否有交易数据
+                if current_date in stock_dates:
+                    cnt -= 1
+                    print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
+                    # 找到交易日后，继续倒数
+                    current_date = current_date - timedelta(days=1)
+                else:
+                    # 视为节假日，直接跳过
+                    current_date = current_date - timedelta(days=1)
             else:
-                # 视为节假日，直接跳过
+                # 跳过周末
+                if current_date.weekday() >= 5:
+                    current_date = current_date - timedelta(days=1)
+                    continue
+
+                cnt -= 1
+                print(f"未来日期: {current_date}, 剩余天数: {cnt}")
+                # 继续倒数
                 current_date = current_date - timedelta(days=1)
         else:
-            # 跳过周末
-            if current_date.weekday() >= 5:
-                current_date = current_date - timedelta(days=1)
-                continue
+            # 15点之后，今天视为过去时间
+            if current_date <= today:
+                # 检查是否有交易数据
+                if current_date in stock_dates:
+                    cnt -= 1
+                    print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
+                    # 找到交易日后，继续倒数
+                    current_date = current_date - timedelta(days=1)
+                else:
+                    # 视为节假日，直接跳过
+                    current_date = current_date - timedelta(days=1)
+            else:
+                # 跳过周末
+                if current_date.weekday() >= 5:
+                    current_date = current_date - timedelta(days=1)
+                    continue
 
-            cnt -= 1
-            print(f"未来日期: {current_date}, 剩余天数: {cnt}")
-            # 继续倒数
-            current_date = current_date - timedelta(days=1)
+                cnt -= 1
+                print(f"未来日期: {current_date}, 剩余天数: {cnt}")
+                # 继续倒数
+                current_date = current_date - timedelta(days=1)
     
     if iteration >= max_iterations:
         print("警告：日期计算达到最大迭代次数，可能数据不足")
@@ -474,17 +504,46 @@ def calculate_movement_space(stock_data, index_data, end_date, days, percentage)
     # 找到最后一个交易日价格
     last_price = None
     last_date = None
+    # 获取当前时间，判断是否在15点之前
+    now = datetime.now()
+    is_before_15 = now.hour < 15
     end_date_only = end_date.date()  # 只保留日期部分
-    for item in reversed(stock_data):
-        try:
-            item_date_str = item['date']
-            item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
-            if item_date <= end_date_only:
-                last_price = item['close']
-                last_date = item_date_str
-                break
-        except ValueError:
-            continue
+    
+    print(f"判断执行时间: {now.strftime('%Y-%m-%d %H:%M:%S')}, 是否在15点之前: {is_before_15}")
+    
+    if is_before_15:
+        # 15点之前，今日作为未来时间，使用昨日作为最后交易日
+        # 计算昨日日期
+        yesterday = end_date_only - timedelta(days=1)
+        print(f"15点之前，使用昨日作为最后交易日: {yesterday}")
+        
+        # 找到昨日或之前最近的交易日
+        for item in reversed(stock_data):
+            try:
+                item_date_str = item['date']
+                item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
+                if item_date <= yesterday:
+                    last_price = item['close']
+                    last_date = item_date_str
+                    break
+            except ValueError:
+                continue
+    else:
+        # 15点之后，今日作为过去时间，使用今日作为最后交易日
+        print(f"15点之后，使用今日作为最后交易日: {end_date_only}")
+        
+        # 找到今日或之前最近的交易日
+        for item in reversed(stock_data):
+            try:
+                item_date_str = item['date']
+                item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
+                if item_date <= end_date_only:
+                    last_price = item['close']
+                    last_date = item_date_str
+                    break
+            except ValueError:
+                continue
+    
     print(f"最后交易日: {last_date}, 最后交易日价格: {last_price:.2f}")
     
     # 计算可涨幅度
@@ -532,13 +591,26 @@ def analyze_single_stock(stock):
         print(f"获取指数数据: {index_code}, 数据条数: {len(index_data)}")
         # 即使指数数据获取失败，也继续分析股票
         
-        # 获取当前日期
-        today = datetime.now()
-        print(f"当前日期: {today}")
+        # 获取当前日期和时间
+        now = datetime.now()
+        today = now.date()
+        is_before_15 = now.hour < 15
+        
+        print(f"当前日期: {now}")
+        print(f"是否在15点之前: {is_before_15}")
         
         # 预测未来7个交易日
         predictions = []
-        current_date = today
+        # 根据是否在15点之前调整预测起始日期
+        if is_before_15:
+            # 15点之前，今日作为未来时间的第一日
+            current_date = now
+            print(f"15点之前，从今日开始预测: {current_date.strftime('%Y-%m-%d')}")
+        else:
+            # 15点之后，今日作为过去时间，明日作为未来第一日
+            current_date = now + timedelta(days=1)
+            print(f"15点之后，从明日开始预测: {current_date.strftime('%Y-%m-%d')}")
+        
         count = 0
         while count < 10:
             # 检查是否是周末（0-4是工作日，5-6是周末）
