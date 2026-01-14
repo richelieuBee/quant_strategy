@@ -690,8 +690,7 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
     with open(md_output_file, 'w', encoding='utf-8') as f:
         f.write(f"# 股票异动分析报告\n\n")
         f.write(f"生成日期: {today.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        f.write("| 股票名称 | 股票代码 | 预测日期 | 区间起点 | 区间终点 | 最低值日期 | 最低值 | 异动类型 | 异动价格 | 最后交易日价格 | 可涨幅度 |\n")
-        f.write("|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|\n")
+        f.write("免责声明：仅供学习参考，不作为任何投资建议，请谨慎对待。\n1. 因未来时间大盘偏移无法估算，因此第二日及之后的异动价格只作预估！\n2. 可涨幅度按照最后交易日收盘价计算，未进行复利叠加，请自行换算！\n\n\n")
     
     # 使用线程池并行分析股票
     results = []
@@ -716,6 +715,11 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
         
         # 写入合并异动数据
         with open(output_file, 'a', encoding='utf-8') as f_csv, open(md_output_file, 'a', encoding='utf-8') as f_md:
+            # 为每支股票创建一个单独的表格，添加表头
+            f_md.write(f"## {stock['name']} ({formatted_code})\n\n")
+            f_md.write("| 股票名称 | 股票代码 | 预测日期 | 区间起点 | 区间终点 | 最低值日期 | 最低值 | 异动类型 | 异动价格 | 最后交易日价格 | 可涨幅度 |\n")
+            f_md.write("|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|\n")
+            
             for pred in predictions:
                 predict_date_str = pred['date'].strftime('%Y-%m-%d')
                 space_10_100 = pred['space_10_100']
@@ -740,7 +744,7 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
             # 每支股票输出完空一行
             f_csv.write("\n")
             # 在MD文件中每支股票之间也添加空行
-            f_md.write("|\n")
+            f_md.write("\n")
     
     print(f"\n分析完成，结果保存到:")
     print(f"合并异动 (CSV): {output_file}")

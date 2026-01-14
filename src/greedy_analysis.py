@@ -274,6 +274,46 @@ def main():
         
         results_df.to_csv(output_file, index=False, encoding='utf-8-sig')
         print(f"\n结果已保存到 '{output_file}'")
+        
+        # 保存结果到MD文件
+        md_output_file = os.path.splitext(output_file)[0] + '.md'
+        with open(md_output_file, 'w', encoding='utf-8') as f:
+            f.write("# 股票最大收益分析报告\n\n")
+            f.write(f"生成日期: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("免责声明：仅供学习参考，不作为任何投资建议，请谨慎对待。\n1. 因未来时间大盘偏移无法估算，因此第二日及之后的异动价格只作预估！\n2. 可涨幅度按照最后交易日收盘价计算，未进行复利叠加，请自行换算！\n3. 算法粗糙，仅图一乐~\n\n")
+            f.write("| 排名 | 股票名称 | 股票代码 | 最大收益率 | 最佳卖出日 | 最佳卖出价 | 买入价 | 最大连续涨停天数 | 涨停开始日期 |\n")
+            f.write("|------|---------|---------|-----------|-----------|-----------|--------|-----------------|-------------|\n")
+            
+            for i, (_, row) in enumerate(results_df.iterrows(), 1):
+                try:
+                    # 处理可能为None的字段
+                    stock_name = row.get('股票名称', '未知')
+                    stock_code = row.get('股票代码')
+                    stock_code_str = str(stock_code).zfill(6) if stock_code is not None else '未知'
+                    max_return = row.get('最大收益率', 0)
+                    best_sell_day = row.get('最佳卖出日', 0)
+                    best_sell_price = row.get('最佳卖出价', 0)
+                    buy_price = row.get('买入价', 0)
+                    max_consecutive = row.get('最大连续涨停天数', 0)
+                    start_date = row.get('涨停开始日期', '未知')
+                    
+                    # 确保所有值都不是None
+                    stock_name = stock_name or '未知'
+                    stock_code_str = stock_code_str or '未知'
+                    max_return = max_return or 0
+                    best_sell_day = best_sell_day or 0
+                    best_sell_price = best_sell_price or 0
+                    buy_price = buy_price or 0
+                    max_consecutive = max_consecutive or 0
+                    start_date = start_date or '未知'
+                    
+                    # 写入MD表格行
+                    f.write(f"| {i} | {stock_name} | {stock_code_str} | {max_return:.2f}% | 第{best_sell_day}天 | {best_sell_price:.2f} | {buy_price:.2f} | {max_consecutive} | {start_date} |\n")
+                except Exception as e:
+                    f.write(f"| {i} | 数据异常 | 未知 | 0.00% | 0 | 0.00 | 0.00 | 0 | 未知 |\n")
+                    continue
+        
+        print(f"结果已保存到 '{md_output_file}'")
     except Exception as e:
         print(f"保存结果时出错: {e}")
 
