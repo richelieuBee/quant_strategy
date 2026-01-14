@@ -678,9 +678,20 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
     output_filename = f"analysis_{base_name}.csv"
     output_file = os.path.join(date_output_dir, output_filename)
     
+    # 准备MD输出文件
+    md_output_filename = f"analysis_{base_name}.md"
+    md_output_file = os.path.join(date_output_dir, md_output_filename)
+    
     # 写入CSV头部
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("股票名称,股票代码,预测日期,区间起点,区间终点,最低值日期,最低值,异动类型,异动价格,最后交易日价格,可涨幅度\n")
+    
+    # 写入MD头部和表格头部
+    with open(md_output_file, 'w', encoding='utf-8') as f:
+        f.write(f"# 股票异动分析报告\n\n")
+        f.write(f"生成日期: {today.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write("| 股票名称 | 股票代码 | 预测日期 | 区间起点 | 区间终点 | 最低值日期 | 最低值 | 异动类型 | 异动价格 | 最后交易日价格 | 可涨幅度 |\n")
+        f.write("|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|\n")
     
     # 使用线程池并行分析股票
     results = []
@@ -704,7 +715,7 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
         predictions = result['predictions']
         
         # 写入合并异动数据
-        with open(output_file, 'a', encoding='utf-8') as f:
+        with open(output_file, 'a', encoding='utf-8') as f_csv, open(md_output_file, 'a', encoding='utf-8') as f_md:
             for pred in predictions:
                 predict_date_str = pred['date'].strftime('%Y-%m-%d')
                 space_10_100 = pred['space_10_100']
@@ -721,12 +732,19 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
                     movement_type = "30日异动"
                 
                 # 写入CSV
-                f.write(f"{stock['name']},{formatted_code},{predict_date_str},{selected_data['start_date']},{selected_data['end_date']},{selected_data['lowest_date']},{selected_data['lowest_price']:.2f},{movement_type},{selected_data['movement_price']:.2f},{selected_data['last_price']:.2f},{selected_data['可涨幅度']:.2f}%\n")
+                f_csv.write(f"{stock['name']},{formatted_code},{predict_date_str},{selected_data['start_date']},{selected_data['end_date']},{selected_data['lowest_date']},{selected_data['lowest_price']:.2f},{movement_type},{selected_data['movement_price']:.2f},{selected_data['last_price']:.2f},{selected_data['可涨幅度']:.2f}%\n")
+                
+                # 写入MD表格行
+                f_md.write(f"| {stock['name']} | {formatted_code} | {predict_date_str} | {selected_data['start_date']} | {selected_data['end_date']} | {selected_data['lowest_date']} | {selected_data['lowest_price']:.2f} | {movement_type} | {selected_data['movement_price']:.2f} | {selected_data['last_price']:.2f} | {selected_data['可涨幅度']:.2f}% |\n")
+            
             # 每支股票输出完空一行
-            f.write("\n")
+            f_csv.write("\n")
+            # 在MD文件中每支股票之间也添加空行
+            f_md.write("|\n")
     
     print(f"\n分析完成，结果保存到:")
-    print(f"合并异动: {output_file}")
+    print(f"合并异动 (CSV): {output_file}")
+    print(f"合并异动 (MD): {md_output_file}")
 
 if __name__ == "__main__":
     # 解析命令行参数
