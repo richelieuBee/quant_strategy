@@ -51,7 +51,9 @@ def get_stock_data(stock_code, days=60):
                 cached_data = json.load(f)
                 # 检查缓存是否有效（缓存时间不超过1天）
                 cache_time = datetime.fromisoformat(cached_data['cache_time'])
-                if (datetime.now() - cache_time).days < 1:
+                # 计算时间差（小时）
+                time_diff = (datetime.now() - cache_time).total_seconds() / 3600
+                if time_diff < 12:
                     print(f"从缓存读取 {stock_code} 数据")
                     return cached_data['data']
         except Exception as e:
@@ -136,7 +138,9 @@ def get_index_data(index_code, days=60):
                 cached_data = json.load(f)
                 # 检查缓存是否有效（缓存时间不超过1天）
                 cache_time = datetime.fromisoformat(cached_data['cache_time'])
-                if (datetime.now() - cache_time).days < 1:
+                # 计算时间差（小时）
+                time_diff = (datetime.now() - cache_time).total_seconds() / 3600
+                if time_diff < 12:
                     print(f"从缓存读取 {index_code} 数据")
                     return cached_data['data']
         except Exception as e:
