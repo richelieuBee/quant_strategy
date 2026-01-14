@@ -690,7 +690,7 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
     with open(md_output_file, 'w', encoding='utf-8') as f:
         f.write(f"# 股票异动分析报告\n\n")
         f.write(f"生成日期: {today.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        f.write("免责声明：仅供学习参考，不作为任何投资建议，请谨慎对待。\n1. 因未来时间大盘偏移无法估算，因此第二日及之后的异动价格只作预估！\n2. 可涨幅度按照最后交易日收盘价计算，未进行复利叠加，请自行换算！\n\n\n")
+        f.write("免责声明：仅供学习参考，不作为任何投资建议，请谨慎对待。\n1. 因未来时间大盘偏移无法估算，因此第二日及之后的异动价格只作预估！\n2. 可涨幅度按照最后交易日收盘价计算，未进行复利叠加，请自行换算！\n\n\n\n\n\n\n")
     
     # 使用线程池并行分析股票
     results = []
