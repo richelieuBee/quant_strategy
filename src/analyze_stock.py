@@ -616,7 +616,7 @@ def analyze_single_stock(stock):
             print(f"15点之后，从明日开始预测: {current_date.strftime('%Y-%m-%d')}")
         
         count = 0
-        while count < 10:
+        while count < 12:
             # 检查是否是周末（0-4是工作日，5-6是周末）
             if current_date.weekday() < 5:
                 predict_date = current_date
