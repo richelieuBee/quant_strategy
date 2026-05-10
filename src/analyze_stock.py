@@ -44,39 +44,55 @@ def get_stock_data(stock_code, days=60):
     获取股票过去60个自然日的交易数据
     支持缓存机制
     """
-    # 生成缓存文件名
-    cache_file = os.path.join(CACHE_DIR, f'stock_{stock_code}.json')
-    
-    # 检查缓存是否存在
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, 'r', encoding='utf-8') as f:
-                cached_data = json.load(f)
-                # 检查缓存是否有效（缓存时间不超过1天）
-                cache_time = datetime.fromisoformat(cached_data['cache_time'])
-                # 计算时间差（小时）
-                time_diff = (datetime.now() - cache_time).total_seconds() / 3600
-                if time_diff < 12:
-                    print(f"从缓存读取 {stock_code} 数据")
-                    return cached_data['data']
-        except Exception as e:
-            print(f"读取缓存失败: {e}")
-    
-    # 从akshare获取数据
-    print(f"从akshare获取 {stock_code} 数据")
     try:
-        # 计算日期范围
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
+        # 生成缓存文件名
+        cache_file = os.path.join(CACHE_DIR, f'stock_{stock_code}.json')
         
-        # 使用akshare获取股票数据（使用正确的API参数）
-        stock_zh_a_daily_df = ak.stock_zh_a_hist(
-            symbol=stock_code, 
-            period="daily",
-            start_date=start_date.strftime('%Y%m%d'), 
-            end_date=end_date.strftime('%Y%m%d'), 
-            adjust="qfq"
-        )
+        # 检查缓存是否存在
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cached_data = json.load(f)
+                    # 检查缓存是否有效（缓存时间不超过1天）
+                    cache_time = datetime.fromisoformat(cached_data['cache_time'])
+                    # 计算时间差（小时）
+                    time_diff = (datetime.now() - cache_time).total_seconds() / 3600
+                    if time_diff < 12:
+                        print(f"从缓存读取 {stock_code} 数据")
+                        return cached_data['data']
+            except Exception as e:
+                print(f"读取缓存失败: {e}")
+        
+        # 从akshare获取数据（带重试机制）
+        print(f"从akshare获取 {stock_code} 数据")
+        
+        import time
+        max_retries = 3
+        retry_delay = 2  # 重试间隔（秒）
+        
+        stock_zh_a_daily_df = None
+        for attempt in range(max_retries):
+            try:
+                # 计算日期范围
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=days)
+                
+                # 使用akshare获取股票数据（使用正确的API参数）
+                stock_zh_a_daily_df = ak.stock_zh_a_hist(
+                    symbol=stock_code, 
+                    period="daily",
+                    start_date=start_date.strftime('%Y%m%d'), 
+                    end_date=end_date.strftime('%Y%m%d'), 
+                    adjust="qfq"
+                )
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"获取数据失败，第 {attempt+1} 次重试...")
+                    time.sleep(retry_delay)
+                    continue
+                else:
+                    raise e
         
         # 转换为列表格式
         data = []
@@ -710,7 +726,7 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
     
     dates = []
     movement_prices = []
-    last_price = None
+    last_prices = []
     
     for pred in predictions:
         dates.append(pred['date'])
@@ -719,17 +735,52 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
         
         if space_10_100['movement_price'] < space_30_200['movement_price']:
             movement_prices.append(space_10_100['movement_price'])
-            last_price = space_10_100['last_price']
+            last_prices.append(space_10_100['last_price'])
         else:
             movement_prices.append(space_30_200['movement_price'])
-            last_price = space_30_200['last_price']
+            last_prices.append(space_30_200['last_price'])
     
     plt.figure(figsize=(12, 7), dpi=120)
     ax = plt.subplot(111)
     
-    ax.plot(dates, movement_prices, color='#2E86AB', linewidth=2.5, marker='o', 
-            markersize=10, markerfacecolor='#F6AE2D', markeredgecolor='#2E86AB',
-            markeredgewidth=2, label='Movement Price')
+    ax.plot(dates, movement_prices, color='#2E86AB', linewidth=2.5, label='Movement Price')
+    
+    # 逐个绘制节点，根据涨幅判断颜色（对换颜色含义）
+    for i, (date, price, current_price) in enumerate(zip(dates, movement_prices, last_prices)):
+        # 判断是否涨幅超过15%
+        if current_price > 0:
+            increase = (price - current_price) / current_price
+            if increase > 0.1:
+                # 涨幅>15%显示黄色
+                marker_color = '#F6AE2D'
+                marker_edge = '#D49A00'
+            else:
+                # 涨幅≤15%显示红色
+                marker_color = '#E94F37'
+                marker_edge = '#C73E3E'
+        else:
+            marker_color = '#E94F37'
+            marker_edge = '#C73E3E'
+        
+        ax.scatter(date, price, s=120, marker='o', color=marker_color, 
+                   edgecolor=marker_edge, linewidth=2, zorder=5)
+    
+    # 添加节点颜色图例
+    import matplotlib.lines as mlines
+    
+    # 获取图例标签字体
+    legend_font_prop = font_prop if font_prop else None
+    
+    red_marker = mlines.Line2D([], [], marker='o', color='#E94F37', linestyle='None',
+                               markersize=10, markerfacecolor='#E94F37', 
+                               markeredgecolor='#C73E3E', label='剩余涨幅≤10%')
+    yellow_marker = mlines.Line2D([], [], marker='o', color='#F6AE2D', linestyle='None',
+                                  markersize=10, markerfacecolor='#F6AE2D', 
+                                  markeredgecolor='#D49A00', label='剩余涨幅>10%')
+    
+    # 创建当前价格虚线图例
+    current_price_line = mlines.Line2D([], [], color='#E94F37', linestyle='--', 
+                                       linewidth=2, label='当前价格')
     
     for i, (date, price) in enumerate(zip(dates, movement_prices)):
         # 交替放置价格标签，避免重叠
@@ -750,30 +801,34 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
                    arrowprops=dict(arrowstyle='-', linestyle='--', 
                                   color='#999999', linewidth=1.0))
     
-    if last_price:
-        ax.axhline(y=last_price, color='#E94F37', linestyle='--', 
-                   linewidth=2, label=f'Current Price: {last_price:.2f}')
+    if last_prices and last_prices[0] > 0:
+        current_price = last_prices[0]
+        ax.axhline(y=current_price, color='#E94F37', linestyle='--', 
+                   linewidth=2, label=f'Current Price: {current_price:.2f}')
     
     date_labels = [d.strftime('%m-%d') for d in dates]
     ax.set_xticks(dates)
     ax.set_xticklabels(date_labels, fontsize=10)
     
-    title_text = f'{stock_name} ({stock_code})'
+    title_text = f'股票异动价一览：{stock_name} ({stock_code})'
     if font_prop:
         # 创建标题字体（加粗）
-        title_font = FontProperties(fname=font_prop.get_file(), size=24)
-        ax.set_title(title_text, fontsize=24, fontweight='bold', 
+        title_font = FontProperties(fname=font_prop.get_file(), size=18)
+        ax.set_title(title_text, fontsize=18, fontweight='bold', 
                     color='#1A365D', fontproperties=title_font, 
                     loc='center', y=1.01)
         ax.set_xlabel('未来20日异动价格', fontsize=12, fontproperties=font_prop)
         ax.set_ylabel('Price (CNY)', fontsize=12, fontproperties=font_prop)
-        legend = ax.legend(loc='upper left', fontsize=10, framealpha=0.9)
+        legend = ax.legend(handles=[red_marker, yellow_marker, current_price_line], 
+                          loc='upper left', fontsize=10, framealpha=0.9, 
+                          prop=legend_font_prop)
     else:
-        ax.set_title(title_text, fontsize=24, fontweight='bold', 
+        ax.set_title(title_text, fontsize=18, fontweight='bold', 
                     color='#1A365D', loc='center', y=1.01)
         ax.set_xlabel('Predict Date', fontsize=12)
         ax.set_ylabel('Price (CNY)', fontsize=12)
-        legend = ax.legend(loc='upper left', fontsize=10, framealpha=0.9)
+        legend = ax.legend(handles=[red_marker, yellow_marker, current_price_line], 
+                          loc='upper left', fontsize=10, framealpha=0.9)
     
     ax.grid(True, linestyle=':', alpha=0.6, color='#888888')
     ax.set_facecolor('#FAFAFA')
@@ -781,7 +836,7 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
     
     plt.tight_layout()
     
-    png_dir = os.path.join(output_dir, 'png')
+    png_dir = os.path.join('output', 'png')
     os.makedirs(png_dir, exist_ok=True)
     
     filename = f'{stock_name}_{stock_code}.png'
