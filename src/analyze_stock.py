@@ -778,9 +778,9 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
                                   markersize=10, markerfacecolor='#F6AE2D', 
                                   markeredgecolor='#D49A00', label='剩余涨幅>10%')
     
-    # 创建当前价格虚线图例
+    # 创建当前价格虚线图例（先不设置标签，后面填充）
     current_price_line = mlines.Line2D([], [], color='#E94F37', linestyle='--', 
-                                       linewidth=2, label='当前价格')
+                                       linewidth=2, label='')
     
     for i, (date, price) in enumerate(zip(dates, movement_prices)):
         # 交替放置价格标签，避免重叠
@@ -804,7 +804,9 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
     if last_prices and last_prices[0] > 0:
         current_price = last_prices[0]
         ax.axhline(y=current_price, color='#E94F37', linestyle='--', 
-                   linewidth=2, label=f'Current Price: {current_price:.2f}')
+                   linewidth=2)
+        # 更新当前价格图例标签，添加具体价格数字
+        current_price_line.set_label(f'当前价格: {current_price:.2f}')
     
     date_labels = [d.strftime('%m-%d') for d in dates]
     ax.set_xticks(dates)
