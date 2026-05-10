@@ -1,0 +1,6 @@
+# 依赖包
+pandas
+numpy
+yfinance
+matplotlib
+akshare
