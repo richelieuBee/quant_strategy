@@ -10,6 +10,7 @@ import argparse
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.font_manager import FontProperties
+from abc import ABC, abstractmethod
 
 # 全局变量
 # 获取当前文件所在目录
@@ -21,6 +22,200 @@ project_root = os.path.dirname(current_dir)
 DEFAULT_STOCK_CSV_PATH = os.path.join(project_root, 'data', 'stock.csv')
 CACHE_DIR = os.path.join(project_root, 'data', 'cache')
 OUTPUT_DIR = os.path.join(project_root, 'output')
+
+# 尝试导入 tushare
+try:
+    import tushare as ts
+    TUSHARE_AVAILABLE = True
+    print("tushare 已安装，将作为备用数据源")
+except ImportError:
+    TUSHARE_AVAILABLE = False
+    print("tushare 未安装，仅使用 akshare")
+
+class StockDataSource(ABC):
+    """
+    股票数据源抽象基类
+    """
+    
+    @abstractmethod
+    def get_stock_daily_data(self, stock_code, start_date, end_date):
+        """
+        获取股票日线数据
+        
+        Args:
+            stock_code: 股票代码
+            start_date: 开始日期 (YYYYMMDD)
+            end_date: 结束日期 (YYYYMMDD)
+        
+        Returns:
+            pandas.DataFrame: 包含日期、开盘、收盘、最高、最低、成交量等字段的DataFrame
+        """
+        pass
+    
+    @abstractmethod
+    def get_name(self):
+        """
+        获取数据源名称
+        """
+        pass
+
+class AkShareDataSource(StockDataSource):
+    """
+    akshare 数据源实现
+    """
+    
+    def get_stock_daily_data(self, stock_code, start_date, end_date):
+        """
+        使用 akshare 获取股票日线数据
+        """
+        try:
+            stock_zh_a_daily_df = ak.stock_zh_a_hist(
+                symbol=stock_code, 
+                period="daily",
+                start_date=start_date, 
+                end_date=end_date, 
+                adjust="qfq"
+            )
+            return stock_zh_a_daily_df
+        except Exception as e:
+            raise Exception(f"akshare 获取数据失败: {str(e)}")
+    
+    def get_name(self):
+        return "akshare"
+
+class TuShareDataSource(StockDataSource):
+    """
+    tushare 数据源实现
+    """
+    
+    def __init__(self):
+        # 尝试初始化 tushare（需要 token，这里不强制要求）
+        try:
+            # 尝试读取配置文件中的 token
+            config_file = os.path.join(project_root, 'config.json')
+            if os.path.exists(config_file):
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                    if 'tushare_token' in config:
+                        ts.set_token(config['tushare_token'])
+            
+            self.pro = ts.pro_api()
+        except Exception as e:
+            # 如果没有配置 token，仍然可以创建对象，只是某些接口可能受限
+            self.pro = None
+            print(f"tushare 初始化警告: {e}")
+    
+    def get_stock_daily_data(self, stock_code, start_date, end_date):
+        """
+        使用 tushare 获取股票日线数据
+        """
+        if self.pro is None:
+            raise Exception("tushare 未初始化，请配置 tushare token")
+        
+        try:
+            # tushare 需要将股票代码转换为带市场后缀的格式
+            ts_code = self._convert_to_ts_code(stock_code)
+            df = self.pro.daily(
+                ts_code=ts_code,
+                start_date=start_date,
+                end_date=end_date,
+                adjust='qfq'
+            )
+            
+            # tushare 返回的字段名与 akshare 不同，需要转换
+            if not df.empty:
+                df = df.rename(columns={
+                    'trade_date': '日期',
+                    'open': '开盘',
+                    'close': '收盘',
+                    'high': '最高',
+                    'low': '最低',
+                    'vol': '成交量',
+                    'amount': '成交额',
+                    'pct_chg': '涨跌幅',
+                    'change': '涨跌额'
+                })
+                # 将日期格式从 YYYYMMDD 转换为 YYYY-MM-DD（与 akshare 格式一致）
+                df['日期'] = df['日期'].astype(str).apply(lambda x: f"{x[:4]}-{x[4:6]}-{x[6:8]}")
+                # 按日期升序排列
+                df = df.sort_values('日期')
+            
+            return df
+        except Exception as e:
+            raise Exception(f"tushare 获取数据失败: {str(e)}")
+    
+    def _convert_to_ts_code(self, stock_code):
+        """
+        将股票代码转换为 tushare 格式
+        """
+        # 判断市场
+        if stock_code.startswith('6'):
+            return f"{stock_code}.SH"
+        else:
+            return f"{stock_code}.SZ"
+    
+    def get_name(self):
+        return "tushare"
+
+class StockDataSourceManager:
+    """
+    数据源管理器，支持自动切换数据源
+    """
+    
+    def __init__(self):
+        self.data_sources = []
+        
+        # 添加 akshare 数据源
+        self.data_sources.append(AkShareDataSource())
+        
+        # 如果 tushare 可用，添加 tushare 数据源
+        if TUSHARE_AVAILABLE:
+            self.data_sources.append(TuShareDataSource())
+        
+        print(f"已注册数据源: {[ds.get_name() for ds in self.data_sources]}")
+    
+    def get_stock_daily_data(self, stock_code, start_date, end_date):
+        """
+        获取股票日线数据，自动尝试所有可用数据源
+        
+        Args:
+            stock_code: 股票代码
+            start_date: 开始日期 (YYYYMMDD)
+            end_date: 结束日期 (YYYYMMDD)
+        
+        Returns:
+            pandas.DataFrame: 包含日期、开盘、收盘、最高、最低、成交量等字段的DataFrame
+        
+        Raises:
+            Exception: 所有数据源都失败时抛出异常
+        """
+        last_exception = None
+        
+        for idx, data_source in enumerate(self.data_sources):
+            try:
+                print(f"尝试使用 {data_source.get_name()} 获取 {stock_code} 数据...")
+                df = data_source.get_stock_daily_data(stock_code, start_date, end_date)
+                
+                if df is not None and not df.empty:
+                    print(f"成功使用 {data_source.get_name()} 获取数据")
+                    return df
+                else:
+                    print(f"{data_source.get_name()} 返回空数据")
+                    continue
+            except Exception as e:
+                last_exception = e
+                print(f"{data_source.get_name()} 获取数据失败: {e}")
+                
+                # 如果不是最后一个数据源，继续尝试下一个
+                if idx < len(self.data_sources) - 1:
+                    print(f"切换到下一个数据源...")
+                    continue
+        
+        # 所有数据源都失败
+        raise Exception(f"所有数据源获取 {stock_code} 数据都失败，最后错误: {last_exception}")
+
+# 创建全局数据源管理器实例
+data_source_manager = StockDataSourceManager()
 
 def read_stock_list(csv_path):
     """
@@ -42,7 +237,7 @@ def read_stock_list(csv_path):
 def get_stock_data(stock_code, days=60):
     """
     获取股票过去60个自然日的交易数据
-    支持缓存机制
+    支持缓存机制，自动切换数据源（akshare -> tushare）
     """
     try:
         # 生成缓存文件名
@@ -59,40 +254,26 @@ def get_stock_data(stock_code, days=60):
                     time_diff = (datetime.now() - cache_time).total_seconds() / 3600
                     if time_diff < 12:
                         print(f"从缓存读取 {stock_code} 数据")
-                        return cached_data['data']
+                        # 修复缓存中的日期格式（将 YYYYMMDD 转换为 YYYY-MM-DD）
+                        data = cached_data['data']
+                        for item in data:
+                            date_str = item.get('date', '')
+                            # 检查是否是 YYYYMMDD 格式（8位数字）
+                            if len(date_str) == 8 and date_str.isdigit():
+                                item['date'] = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                        return data
             except Exception as e:
                 print(f"读取缓存失败: {e}")
         
-        # 从akshare获取数据（带重试机制）
-        print(f"从akshare获取 {stock_code} 数据")
+        # 使用数据源管理器获取数据（自动尝试 akshare，失败切换到 tushare）
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
         
-        import time
-        max_retries = 3
-        retry_delay = 2  # 重试间隔（秒）
-        
-        stock_zh_a_daily_df = None
-        for attempt in range(max_retries):
-            try:
-                # 计算日期范围
-                end_date = datetime.now()
-                start_date = end_date - timedelta(days=days)
-                
-                # 使用akshare获取股票数据（使用正确的API参数）
-                stock_zh_a_daily_df = ak.stock_zh_a_hist(
-                    symbol=stock_code, 
-                    period="daily",
-                    start_date=start_date.strftime('%Y%m%d'), 
-                    end_date=end_date.strftime('%Y%m%d'), 
-                    adjust="qfq"
-                )
-                break
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    print(f"获取数据失败，第 {attempt+1} 次重试...")
-                    time.sleep(retry_delay)
-                    continue
-                else:
-                    raise e
+        stock_zh_a_daily_df = data_source_manager.get_stock_daily_data(
+            stock_code, 
+            start_date.strftime('%Y%m%d'), 
+            end_date.strftime('%Y%m%d')
+        )
         
         # 转换为列表格式
         data = []
@@ -333,7 +514,7 @@ def find_date_range(end_date, days, stock_data):
                     continue
 
                 cnt -= 1
-                print(f"未来日期: {current_date}, 剩余天数: {cnt}")
+                # print(f"未来日期: {current_date}, 剩余天数: {cnt}")
                 # 继续倒数
                 current_date = current_date - timedelta(days=1)
         else:
@@ -342,7 +523,7 @@ def find_date_range(end_date, days, stock_data):
                 # 检查是否有交易数据
                 if current_date in stock_dates:
                     cnt -= 1
-                    print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
+                    # print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
                     # 找到交易日后，继续倒数
                     current_date = current_date - timedelta(days=1)
                 else:
@@ -355,7 +536,7 @@ def find_date_range(end_date, days, stock_data):
                     continue
 
                 cnt -= 1
-                print(f"未来日期: {current_date}, 剩余天数: {cnt}")
+                # print(f"未来日期: {current_date}, 剩余天数: {cnt}")
                 # 继续倒数
                 current_date = current_date - timedelta(days=1)
     

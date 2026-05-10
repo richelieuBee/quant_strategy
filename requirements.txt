@@ -4,3 +4,4 @@ numpy
 yfinance
 matplotlib
 akshare
+tushare
