@@ -7,6 +7,9 @@ import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import argparse
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.font_manager import FontProperties
 
 # 全局变量
 # 获取当前文件所在目录
@@ -616,7 +619,7 @@ def analyze_single_stock(stock):
             print(f"15点之后，从明日开始预测: {current_date.strftime('%Y-%m-%d')}")
         
         count = 0
-        while count < 12:
+        while count < 20:
             # 检查是否是周末（0-4是工作日，5-6是周末）
             if current_date.weekday() < 5:
                 predict_date = current_date
@@ -651,6 +654,144 @@ def analyze_single_stock(stock):
         import traceback
         traceback.print_exc()
         return None
+
+def get_font_path():
+    """
+    获取系统中可用的中文字体路径（优先黑体）
+    """
+    font_paths = {
+        'windows': [
+            'C:/Windows/Fonts/simhei.ttf',
+            'C:/Windows/Fonts/msyh.ttc',
+            'C:/Windows/Fonts/simsun.ttc',
+        ],
+        'linux': [
+            '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+            '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+        ],
+        'darwin': [
+            '/Library/Fonts/SimHei.ttf',
+            '/System/Library/Fonts/PingFang.ttc',
+            '/Library/Fonts/Songti.ttc',
+        ]
+    }
+    
+    import platform
+    system = platform.system().lower()
+    
+    if system == 'windows':
+        paths = font_paths['windows']
+    elif system == 'linux':
+        paths = font_paths['linux']
+    elif system == 'darwin':
+        paths = font_paths['darwin']
+    else:
+        paths = font_paths['windows'] + font_paths['linux'] + font_paths['darwin']
+    
+    for path in paths:
+        if os.path.exists(path):
+            return path
+    return None
+
+def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
+    """
+    生成股票异动价格折线图
+    :param stock_name: 股票名称
+    :param stock_code: 股票代码
+    :param predictions: 预测数据列表
+    :param output_dir: 输出目录
+    """
+    font_path = get_font_path()
+    if font_path:
+        font_prop = FontProperties(fname=font_path)
+    else:
+        font_prop = None
+    
+    dates = []
+    movement_prices = []
+    last_price = None
+    
+    for pred in predictions:
+        dates.append(pred['date'])
+        space_10_100 = pred['space_10_100']
+        space_30_200 = pred['space_30_200']
+        
+        if space_10_100['movement_price'] < space_30_200['movement_price']:
+            movement_prices.append(space_10_100['movement_price'])
+            last_price = space_10_100['last_price']
+        else:
+            movement_prices.append(space_30_200['movement_price'])
+            last_price = space_30_200['last_price']
+    
+    plt.figure(figsize=(12, 7), dpi=120)
+    ax = plt.subplot(111)
+    
+    ax.plot(dates, movement_prices, color='#2E86AB', linewidth=2.5, marker='o', 
+            markersize=10, markerfacecolor='#F6AE2D', markeredgecolor='#2E86AB',
+            markeredgewidth=2, label='Movement Price')
+    
+    for i, (date, price) in enumerate(zip(dates, movement_prices)):
+        # 交替放置价格标签，避免重叠
+        if i % 2 == 0:
+            # 偶数索引放在节点上方
+            xytext = (0, 15)
+            va = 'bottom'
+        else:
+            # 奇数索引放在节点下方
+            xytext = (0, -25)
+            va = 'top'
+        
+        ax.annotate(f'{price:.2f}', xy=(date, price), xytext=xytext,
+                   textcoords='offset points', ha='center', va=va,
+                   fontsize=10, fontweight='normal', color='#264653',
+                   bbox=dict(boxstyle='round,pad=0.3', facecolor='#F6AE2D', 
+                            edgecolor='#2E86AB', alpha=0.8),
+                   arrowprops=dict(arrowstyle='-', linestyle='--', 
+                                  color='#999999', linewidth=1.0))
+    
+    if last_price:
+        ax.axhline(y=last_price, color='#E94F37', linestyle='--', 
+                   linewidth=2, label=f'Current Price: {last_price:.2f}')
+    
+    date_labels = [d.strftime('%m-%d') for d in dates]
+    ax.set_xticks(dates)
+    ax.set_xticklabels(date_labels, fontsize=10)
+    
+    title_text = f'{stock_name} ({stock_code})'
+    if font_prop:
+        # 创建标题字体（加粗）
+        title_font = FontProperties(fname=font_prop.get_file(), size=24)
+        ax.set_title(title_text, fontsize=24, fontweight='bold', 
+                    color='#1A365D', fontproperties=title_font, 
+                    loc='center', y=1.01)
+        ax.set_xlabel('未来20日异动价格', fontsize=12, fontproperties=font_prop)
+        ax.set_ylabel('Price (CNY)', fontsize=12, fontproperties=font_prop)
+        legend = ax.legend(loc='upper left', fontsize=10, framealpha=0.9)
+    else:
+        ax.set_title(title_text, fontsize=24, fontweight='bold', 
+                    color='#1A365D', loc='center', y=1.01)
+        ax.set_xlabel('Predict Date', fontsize=12)
+        ax.set_ylabel('Price (CNY)', fontsize=12)
+        legend = ax.legend(loc='upper left', fontsize=10, framealpha=0.9)
+    
+    ax.grid(True, linestyle=':', alpha=0.6, color='#888888')
+    ax.set_facecolor('#FAFAFA')
+    plt.xticks(rotation=45, ha='right')
+    
+    plt.tight_layout()
+    
+    png_dir = os.path.join(output_dir, 'png')
+    os.makedirs(png_dir, exist_ok=True)
+    
+    filename = f'{stock_name}_{stock_code}.png'
+    filepath = os.path.join(png_dir, filename)
+    
+    plt.savefig(filepath, dpi=120, bbox_inches='tight', 
+                facecolor='white', edgecolor='none')
+    plt.close()
+    
+    print(f"折线图已保存: {filepath}")
 
 def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
     """
@@ -745,6 +886,9 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
             f_csv.write("\n")
             # 在MD文件中每支股票之间也添加空行
             f_md.write("\n")
+            
+            # 生成折线图
+            plot_stock_movement(stock['name'], formatted_code, predictions, date_output_dir)
     
     print(f"\n分析完成，结果保存到:")
     print(f"合并异动 (CSV): {output_file}")
