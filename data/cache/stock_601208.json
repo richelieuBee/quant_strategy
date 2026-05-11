@@ -1,26 +1,15 @@
 {
-  "cache_time": "2026-05-10T15:25:00.219439",
+  "cache_time": "2026-05-11T22:28:49.225645",
   "data": [
-    {
-      "date": "2026-03-11",
-      "close": 32.03,
-      "open": 31.6,
-      "high": 32.91,
-      "low": 31.6,
-      "volume": 647877.0,
-      "amount": 2090388231.0,
-      "change_pct": 2.04,
-      "change": 0.64
-    },
     {
       "date": "2026-03-12",
       "close": 31.96,
       "open": 32.04,
       "high": 33.06,
       "low": 31.52,
-      "volume": 574256.0,
-      "amount": 1851153543.0,
-      "change_pct": -0.22,
+      "volume": 574255.56,
+      "amount": 1851153.543,
+      "change_pct": -0.2185,
       "change": -0.07
     },
     {
@@ -29,9 +18,9 @@
       "open": 31.65,
       "high": 33.5,
       "low": 31.2,
-      "volume": 740294.0,
-      "amount": 2404449162.0,
-      "change_pct": 3.85,
+      "volume": 740294.28,
+      "amount": 2404449.162,
+      "change_pct": 3.8486,
       "change": 1.23
     },
     {
@@ -40,9 +29,9 @@
       "open": 33.19,
       "high": 33.19,
       "low": 30.79,
-      "volume": 639698.0,
-      "amount": 2032434205.0,
-      "change_pct": -1.3,
+      "volume": 639698.33,
+      "amount": 2032434.205,
+      "change_pct": -1.2956,
       "change": -0.43
     },
     {
@@ -51,9 +40,9 @@
       "open": 33.03,
       "high": 33.57,
       "low": 31.05,
-      "volume": 479405.0,
-      "amount": 1526929793.0,
-      "change_pct": -5.13,
+      "volume": 479405.11,
+      "amount": 1526929.793,
+      "change_pct": -5.1282,
       "change": -1.68
     },
     {
@@ -62,9 +51,9 @@
       "open": 31.08,
       "high": 32.22,
       "low": 30.6,
-      "volume": 420679.0,
-      "amount": 1323321574.0,
-      "change_pct": 2.25,
+      "volume": 420679.41,
+      "amount": 1323321.574,
+      "change_pct": 2.2523,
       "change": 0.7
     },
     {
@@ -73,9 +62,9 @@
       "open": 31.0,
       "high": 31.88,
       "low": 30.5,
-      "volume": 427876.0,
-      "amount": 1325539481.0,
-      "change_pct": -3.08,
+      "volume": 427875.84,
+      "amount": 1325539.481,
+      "change_pct": -3.0837,
       "change": -0.98
     },
     {
@@ -84,9 +73,9 @@
       "open": 31.06,
       "high": 31.57,
       "low": 30.55,
-      "volume": 346862.0,
-      "amount": 1076827679.0,
-      "change_pct": -0.13,
+      "volume": 346861.95,
+      "amount": 1076827.679,
+      "change_pct": -0.1299,
       "change": -0.04
     },
     {
@@ -95,9 +84,9 @@
       "open": 29.7,
       "high": 30.04,
       "low": 28.2,
-      "volume": 481659.0,
-      "amount": 1404736139.0,
-      "change_pct": -6.21,
+      "volume": 481658.73,
+      "amount": 1404736.139,
+      "change_pct": -6.2094,
       "change": -1.91
     },
     {
@@ -106,9 +95,9 @@
       "open": 29.51,
       "high": 29.52,
       "low": 27.4,
-      "volume": 411276.0,
-      "amount": 1166458527.0,
-      "change_pct": 0.62,
+      "volume": 411275.52,
+      "amount": 1166458.527,
+      "change_pct": 0.6239,
       "change": 0.18
     },
     {
@@ -117,9 +106,9 @@
       "open": 29.71,
       "high": 31.14,
       "low": 29.52,
-      "volume": 497557.0,
-      "amount": 1517873213.0,
-      "change_pct": 4.96,
+      "volume": 497556.91,
+      "amount": 1517873.213,
+      "change_pct": 4.9604,
       "change": 1.44
     },
     {
@@ -128,9 +117,9 @@
       "open": 30.2,
       "high": 30.44,
       "low": 29.46,
-      "volume": 285526.0,
-      "amount": 852574793.0,
-      "change_pct": -2.86,
+      "volume": 285526.02,
+      "amount": 852574.793,
+      "change_pct": -2.8553,
       "change": -0.87
     },
     {
@@ -139,9 +128,9 @@
       "open": 28.6,
       "high": 30.88,
       "low": 28.6,
-      "volume": 344852.0,
-      "amount": 1034051972.0,
-      "change_pct": 1.52,
+      "volume": 344851.69,
+      "amount": 1034051.972,
+      "change_pct": 1.5203,
       "change": 0.45
     },
     {
@@ -150,9 +139,9 @@
       "open": 29.74,
       "high": 31.05,
       "low": 29.28,
-      "volume": 289581.0,
-      "amount": 875436366.0,
-      "change_pct": 1.06,
+      "volume": 289580.78,
+      "amount": 875436.366,
+      "change_pct": 1.0649,
       "change": 0.32
     },
     {
@@ -161,9 +150,9 @@
       "open": 30.38,
       "high": 30.67,
       "low": 29.08,
-      "volume": 321366.0,
-      "amount": 954618173.0,
-      "change_pct": -3.36,
+      "volume": 321366.14,
+      "amount": 954618.173,
+      "change_pct": -3.3586,
       "change": -1.02
     },
     {
@@ -172,9 +161,9 @@
       "open": 30.5,
       "high": 31.14,
       "low": 30.15,
-      "volume": 396623.0,
-      "amount": 1216990260.0,
-      "change_pct": 4.02,
+      "volume": 396622.87,
+      "amount": 1216990.26,
+      "change_pct": 4.0204,
       "change": 1.18
     },
     {
@@ -183,9 +172,9 @@
       "open": 30.25,
       "high": 30.5,
       "low": 29.17,
-      "volume": 286338.0,
-      "amount": 853101828.0,
-      "change_pct": -3.7,
+      "volume": 286338.11,
+      "amount": 853101.828,
+      "change_pct": -3.7013,
       "change": -1.13
     },
     {
@@ -194,9 +183,9 @@
       "open": 29.7,
       "high": 31.31,
       "low": 29.12,
-      "volume": 538540.0,
-      "amount": 1646972876.0,
-      "change_pct": 4.08,
+      "volume": 538540.49,
+      "amount": 1646972.876,
+      "change_pct": 4.0816,
       "change": 1.2
     },
     {
@@ -205,9 +194,9 @@
       "open": 31.77,
       "high": 33.6,
       "low": 31.77,
-      "volume": 749800.0,
-      "amount": 2444762021.0,
-      "change_pct": 5.56,
+      "volume": 749800.21,
+      "amount": 2444762.021,
+      "change_pct": 5.5556,
       "change": 1.7
     },
     {
@@ -216,9 +205,9 @@
       "open": 33.55,
       "high": 33.63,
       "low": 32.61,
-      "volume": 642352.0,
-      "amount": 2127133661.0,
-      "change_pct": 3.22,
+      "volume": 642351.67,
+      "amount": 2127133.661,
+      "change_pct": 3.2198,
       "change": 1.04
     },
     {
@@ -227,9 +216,9 @@
       "open": 32.67,
       "high": 33.95,
       "low": 32.66,
-      "volume": 466133.0,
-      "amount": 1562854038.0,
-      "change_pct": 0.6,
+      "volume": 466132.8,
+      "amount": 1562854.038,
+      "change_pct": 0.5999,
       "change": 0.2
     },
     {
@@ -238,9 +227,9 @@
       "open": 33.7,
       "high": 34.58,
       "low": 33.55,
-      "volume": 455119.0,
-      "amount": 1547598153.0,
-      "change_pct": 0.03,
+      "volume": 455118.81,
+      "amount": 1547598.153,
+      "change_pct": 0.0298,
       "change": 0.01
     },
     {
@@ -249,9 +238,9 @@
       "open": 33.23,
       "high": 35.22,
       "low": 33.23,
-      "volume": 601206.0,
-      "amount": 2085258421.0,
-      "change_pct": 3.7,
+      "volume": 601205.81,
+      "amount": 2085258.421,
+      "change_pct": 3.696,
       "change": 1.24
     },
     {
@@ -260,9 +249,9 @@
       "open": 35.42,
       "high": 35.53,
       "low": 33.66,
-      "volume": 664254.0,
-      "amount": 2291390696.0,
-      "change_pct": -2.21,
+      "volume": 664253.59,
+      "amount": 2291390.696,
+      "change_pct": -2.2133,
       "change": -0.77
     },
     {
@@ -271,9 +260,9 @@
       "open": 34.18,
       "high": 34.2,
       "low": 32.64,
-      "volume": 505521.0,
-      "amount": 1688338679.0,
-      "change_pct": -2.76,
+      "volume": 505521.08,
+      "amount": 1688338.679,
+      "change_pct": -2.7631,
       "change": -0.94
     },
     {
@@ -282,9 +271,9 @@
       "open": 33.08,
       "high": 34.69,
       "low": 32.59,
-      "volume": 451540.0,
-      "amount": 1521359938.0,
-      "change_pct": 2.81,
+      "volume": 451540.09,
+      "amount": 1521359.938,
+      "change_pct": 2.8114,
       "change": 0.93
     },
     {
@@ -293,9 +282,9 @@
       "open": 34.18,
       "high": 37.41,
       "low": 34.0,
-      "volume": 957437.0,
-      "amount": 3473139354.0,
-      "change_pct": 8.0,
+      "volume": 957437.36,
+      "amount": 3473139.354,
+      "change_pct": 7.9976,
       "change": 2.72
     },
     {
@@ -304,9 +293,9 @@
       "open": 36.51,
       "high": 36.65,
       "low": 35.42,
-      "volume": 652571.0,
-      "amount": 2339186771.0,
-      "change_pct": -2.94,
+      "volume": 652571.2,
+      "amount": 2339186.771,
+      "change_pct": -2.9404,
       "change": -1.08
     },
     {
@@ -315,9 +304,9 @@
       "open": 35.15,
       "high": 36.2,
       "low": 34.98,
-      "volume": 515737.0,
-      "amount": 1839198554.0,
-      "change_pct": 1.18,
+      "volume": 515736.82,
+      "amount": 1839198.554,
+      "change_pct": 1.1781,
       "change": 0.42
     },
     {
@@ -326,9 +315,9 @@
       "open": 35.7,
       "high": 36.77,
       "low": 35.45,
-      "volume": 609260.0,
-      "amount": 2212637373.0,
-      "change_pct": 1.58,
+      "volume": 609259.66,
+      "amount": 2212637.373,
+      "change_pct": 1.5803,
       "change": 0.57
     },
     {
@@ -337,9 +326,9 @@
       "open": 36.65,
       "high": 36.78,
       "low": 34.0,
-      "volume": 912446.0,
-      "amount": 3192725398.0,
-      "change_pct": -6.85,
+      "volume": 912446.01,
+      "amount": 3192725.398,
+      "change_pct": -6.8504,
       "change": -2.51
     },
     {
@@ -348,9 +337,9 @@
       "open": 34.13,
       "high": 34.75,
       "low": 33.65,
-      "volume": 446402.0,
-      "amount": 1522748894.0,
-      "change_pct": 0.21,
+      "volume": 446402.22,
+      "amount": 1522748.894,
+      "change_pct": 0.2051,
       "change": 0.07
     },
     {
@@ -359,9 +348,9 @@
       "open": 34.9,
       "high": 36.5,
       "low": 34.85,
-      "volume": 611948.0,
-      "amount": 2186990480.0,
-      "change_pct": 5.47,
+      "volume": 611948.08,
+      "amount": 2186990.48,
+      "change_pct": 5.4678,
       "change": 1.87
     },
     {
@@ -370,9 +359,9 @@
       "open": 36.17,
       "high": 36.7,
       "low": 35.02,
-      "volume": 590248.0,
-      "amount": 2118014541.0,
-      "change_pct": -1.33,
+      "volume": 590247.74,
+      "amount": 2118014.541,
+      "change_pct": -1.3307,
       "change": -0.48
     },
     {
@@ -381,9 +370,9 @@
       "open": 35.59,
       "high": 39.15,
       "low": 35.59,
-      "volume": 1342625.0,
-      "amount": 5133107422.0,
-      "change_pct": 8.63,
+      "volume": 1342624.51,
+      "amount": 5133107.422,
+      "change_pct": 8.626,
       "change": 3.07
     },
     {
@@ -392,9 +381,9 @@
       "open": 39.0,
       "high": 39.99,
       "low": 37.72,
-      "volume": 992017.0,
-      "amount": 3835063576.0,
-      "change_pct": 1.24,
+      "volume": 992016.71,
+      "amount": 3835063.576,
+      "change_pct": 1.2416,
       "change": 0.48
     },
     {
@@ -403,9 +392,9 @@
       "open": 40.0,
       "high": 41.97,
       "low": 39.15,
-      "volume": 872304.0,
-      "amount": 3591243976.0,
-      "change_pct": 4.88,
+      "volume": 872303.81,
+      "amount": 3591243.976,
+      "change_pct": 4.8799,
       "change": 1.91
     },
     {
@@ -414,9 +403,9 @@
       "open": 41.46,
       "high": 45.16,
       "low": 41.46,
-      "volume": 879132.0,
-      "amount": 3871057631.0,
-      "change_pct": 10.01,
+      "volume": 879132.06,
+      "amount": 3871057.631,
+      "change_pct": 10.0122,
       "change": 4.11
     },
     {
@@ -425,10 +414,21 @@
       "open": 46.25,
       "high": 47.73,
       "low": 45.01,
-      "volume": 1166896.0,
-      "amount": 5420876147.0,
-      "change_pct": 2.08,
+      "volume": 1166896.13,
+      "amount": 5420876.147,
+      "change_pct": 2.0815,
       "change": 0.94
+    },
+    {
+      "date": "2026-05-11",
+      "close": 45.8,
+      "open": 45.9,
+      "high": 46.9,
+      "low": 44.63,
+      "volume": 923605.26,
+      "amount": 4221526.935,
+      "change_pct": -0.6508,
+      "change": -0.3
     }
   ]
 }
