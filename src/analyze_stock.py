@@ -926,19 +926,18 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
     
     ax.plot(dates, movement_prices, color='#2E86AB', linewidth=2.5, label='Movement Price')
     
-    # 逐个绘制节点，根据涨幅判断颜色（对换颜色含义）
+    has_warning = False
+    
     for i, (date, price, current_price) in enumerate(zip(dates, movement_prices, last_prices)):
-        # 判断是否涨幅超过15%
         if current_price > 0:
             increase = (price - current_price) / current_price
             if increase > 0.1:
-                # 涨幅>15%显示黄色
                 marker_color = '#F6AE2D'
                 marker_edge = '#D49A00'
             else:
-                # 涨幅≤15%显示红色
                 marker_color = '#E94F37'
                 marker_edge = '#C73E3E'
+                has_warning = True
         else:
             marker_color = '#E94F37'
             marker_edge = '#C73E3E'
@@ -1022,7 +1021,10 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
     png_dir = os.path.join('output', 'png')
     os.makedirs(png_dir, exist_ok=True)
     
-    filename = f'{stock_name}_{stock_code}.png'
+    if has_warning:
+        filename = f'{stock_name}_{stock_code}_warnings.png'
+    else:
+        filename = f'{stock_name}_{stock_code}.png'
     filepath = os.path.join(png_dir, filename)
     
     plt.savefig(filepath, dpi=120, bbox_inches='tight', 
