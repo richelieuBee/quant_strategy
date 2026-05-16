@@ -130,9 +130,11 @@
             display: flex;
             gap: 15px;
             margin-bottom: 30px;
+            width: 100%;
         }
         .search-box input {
-            flex: 1;
+            width: 100%;
+            min-width: 300px;
             padding: 15px 20px;
             border: 2px solid #e2e8f0;
             border-radius: 10px;
@@ -250,6 +252,56 @@
             border-color: #2e86ab;
             color: #2e86ab;
         }
+        .search-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+        }
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #2e86ab;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .search-suggestions.show {
+            display: block;
+        }
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.2s;
+        }
+        .suggestion-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 8px 8px;
+        }
+        .suggestion-item:hover {
+            background: #f1f5f9;
+        }
+        .suggestion-item .stock-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .suggestion-item .stock-code {
+            font-size: 12px;
+            color: #64748b;
+            margin-left: 10px;
+        }
+        .suggestion-item .stock-pinyin {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
@@ -272,7 +324,10 @@
         <div class="main-content">
             <h1>股票异动价分析</h1>
             <div class="search-box">
-                <input type="text" id="stockInput" placeholder="请输入股票名称或代码，如：利通电子 或 603629" onkeypress="handleKeyPress(event)">
+                <div class="search-container">
+                    <input type="text" id="stockInput" placeholder="请输入股票名称或代码，如：利通电子 或 603629" oninput="handleSearchInput(event)" onkeypress="handleKeyPress(event)" onfocus="handleSearchInput(event)">
+                    <div class="search-suggestions" id="searchSuggestions"></div>
+                </div>
                 <button id="searchBtn" onclick="analyzeStock()">分析</button>
             </div>
             <div class="loading" id="loading">
@@ -292,12 +347,77 @@
 
     <script>
         let currentStockCode = '';
+        let searchTimeout = null;
+
+        function handleSearchInput(event) {
+            const query = event.target.value.trim();
+
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+
+            if (query.length < 1) {
+                hideSuggestions();
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                searchStocks(query);
+            }, 200);
+        }
+
+        async function searchStocks(query) {
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success && data.stocks && data.stocks.length > 0) {
+                    showSuggestions(data.stocks);
+                } else {
+                    hideSuggestions();
+                }
+            } catch (err) {
+                console.error('搜索失败:', err);
+                hideSuggestions();
+            }
+        }
+
+        function showSuggestions(stocks) {
+            const container = document.getElementById('searchSuggestions');
+            container.innerHTML = stocks.map(stock => `
+                <div class="suggestion-item" onclick="selectStock('${stock.name}', '${stock.code}')">
+                    <span class="stock-name">${stock.name}</span>
+                    <span class="stock-code">${stock.code}</span>
+                    <span class="stock-pinyin">${stock.pinyin || ''}</span>
+                </div>
+            `).join('');
+            container.classList.add('show');
+        }
+
+        function hideSuggestions() {
+            const container = document.getElementById('searchSuggestions');
+            container.classList.remove('show');
+        }
+
+        function selectStock(name, code) {
+            document.getElementById('stockInput').value = name;
+            hideSuggestions();
+            analyzeStock();
+        }
 
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
+                hideSuggestions();
                 analyzeStock();
             }
         }
+
+        document.addEventListener('click', function(event) {
+            const searchContainer = document.querySelector('.search-container');
+            if (!searchContainer.contains(event.target)) {
+                hideSuggestions();
+            }
+        });
 
         async function analyzeStock() {
             const stockInput = document.getElementById('stockInput').value.trim();

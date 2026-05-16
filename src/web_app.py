@@ -79,6 +79,7 @@ from src.analyze_stock import (
     get_font_path,
     read_stock_list
 )
+from stock_search import search_stocks
 
 app = Flask(__name__)
 
@@ -312,6 +313,31 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
 def index():
     return render_template('index.html')
 
+@app.route('/api/search', methods=['GET'])
+def search():
+    """模糊搜索股票"""
+    query = request.args.get('q', '').strip()
+    print(f"[DEBUG] 搜索请求: query='{query}'")
+    if not query:
+        print("[DEBUG] 查询为空")
+        return jsonify({'success': True, 'stocks': []})
+
+    print("[DEBUG] 调用 search_stocks...")
+    results = search_stocks(query, limit=10)
+    print(f"[DEBUG] 搜索结果: {len(results)} 条")
+    if results:
+        print(f"[DEBUG] 第一条结果: {results[0]}")
+    return jsonify({
+        'success': True,
+        'stocks': results
+    })
+
+@app.route('/api/test')
+def test():
+    """测试接口"""
+    print("[DEBUG] 测试接口被调用")
+    return jsonify({'success': True, 'message': '测试成功'})
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
     data = request.get_json()
@@ -333,7 +359,14 @@ def analyze():
     else:
         stock_name, stock_code = search_stock_by_name(stock_input)
         if not stock_name or not stock_code:
-            return jsonify({'error': f'未找到股票: {stock_input}'})
+            # 本地CSV找不到，尝试从全市场股票中搜索
+            full_market_results = search_stocks(stock_input, limit=1)
+            if full_market_results:
+                stock_name = full_market_results[0]['name']
+                stock_code = full_market_results[0]['code']
+
+    if not stock_name or not stock_code:
+        return jsonify({'error': f'未找到股票: {stock_input}'})
 
     # 尝试从缓存加载
     cached_png = load_cached_png(stock_name, stock_code)

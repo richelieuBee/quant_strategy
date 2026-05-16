@@ -7,4 +7,4 @@ akshare
 tushare
 flask
 apscheduler
-matplotlib
+pypinyin
