@@ -162,15 +162,18 @@ def load_cached_png(stock_name, stock_code):
             return f.read()
     return None
 
-def save_png_to_cache(stock_name, stock_code, png_data, has_warning=False):
+def save_png_to_cache(stock_name, stock_code, png_data, has_warning=False, next_increase_pct=None):
     """保存PNG图片到缓存，同时保存状态信息"""
     cache_path = get_cache_file_path(stock_name, stock_code)
     with open(cache_path, 'wb') as f:
         f.write(png_data)
-    
+
     status_path = cache_path.replace('.png', '_status.json')
+    status_data = {'has_warning': has_warning}
+    if next_increase_pct is not None:
+        status_data['next_increase_pct'] = next_increase_pct
     with open(status_path, 'w', encoding='utf-8') as f:
-        json.dump({'has_warning': has_warning}, f, ensure_ascii=False)
+        json.dump(status_data, f, ensure_ascii=False)
 
 def search_stock_by_name(stock_name):
     data_dir = os.path.join(project_root, 'data')
@@ -215,6 +218,7 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
     dates = []
     movement_prices = []
     last_prices = []
+    is_10_day = []  # 记录是否为10日异动
     
     for pred in predictions:
         dates.append(pred['date'])
@@ -224,9 +228,11 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
         if space_10_100['movement_price'] < space_30_200['movement_price']:
             movement_prices.append(space_10_100['movement_price'])
             last_prices.append(space_10_100['last_price'])
+            is_10_day.append(True)  # 10日异动
         else:
             movement_prices.append(space_30_200['movement_price'])
             last_prices.append(space_30_200['last_price'])
+            is_10_day.append(False)  # 30日异动
     
     plt.figure(figsize=(18, 7), dpi=120)
     ax = plt.subplot(111)
@@ -235,19 +241,28 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
     
     has_warning = False
 
-    for i, (date, price, current_price) in enumerate(zip(dates, movement_prices, last_prices)):
+    for i, (date, price, current_price, day_10) in enumerate(zip(dates, movement_prices, last_prices, is_10_day)):
+        # 检查涨幅是否超过阈值（用于警告判断）
+        has_node_warning = False
         if current_price > 0:
             increase = (price - current_price) / current_price
-            if increase > threshold:
-                marker_color = '#F6AE2D'
-                marker_edge = '#D49A00'
-            else:
-                marker_color = '#E94F37'
-                marker_edge = '#C73E3E'
-                has_warning = True
-        else:
+            if increase <= threshold:
+                has_node_warning = True
+        
+        # 根据异动类型和警告状态决定颜色
+        if has_node_warning:
+            # 涨幅超过阈值时显示红色
             marker_color = '#E94F37'
             marker_edge = '#C73E3E'
+            has_warning = True
+        elif day_10:
+            # 10日异动 - 蓝色
+            marker_color = '#2E86AB'
+            marker_edge = '#1a5f7a'
+        else:
+            # 30日异动 - 黄色
+            marker_color = '#F6AE2D'
+            marker_edge = '#D49A00'
 
         ax.scatter(date, price, s=120, marker='o', color=marker_color,
                    edgecolor=marker_edge, linewidth=2, zorder=5)
@@ -256,12 +271,15 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
 
     legend_font_prop = font_prop if font_prop else None
 
-    red_marker = mlines.Line2D([], [], marker='o', color='#E94F37', linestyle='None',
-                               markersize=10, markerfacecolor='#E94F37',
-                               markeredgecolor='#C73E3E', label=f'剩余涨幅<={threshold_pct}%')
+    blue_marker = mlines.Line2D([], [], marker='o', color='#2E86AB', linestyle='None',
+                               markersize=10, markerfacecolor='#2E86AB',
+                               markeredgecolor='#1a5f7a', label='10日异动')
     yellow_marker = mlines.Line2D([], [], marker='o', color='#F6AE2D', linestyle='None',
                                   markersize=10, markerfacecolor='#F6AE2D',
-                                  markeredgecolor='#D49A00', label=f'剩余涨幅>{threshold_pct}%')
+                                  markeredgecolor='#D49A00', label='30日异动')
+    red_marker = mlines.Line2D([], [], marker='o', color='#E94F37', linestyle='None',
+                               markersize=10, markerfacecolor='#E94F37',
+                               markeredgecolor='#C73E3E', label='风险预警')
     
     current_price_line = mlines.Line2D([], [], color='#E94F37', linestyle='--', 
                                        linewidth=2, label='')
@@ -300,7 +318,7 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
                     loc='center', y=1.01)
         ax.set_xlabel('未来30个交易日异动价格', fontsize=12, fontproperties=font_prop)
         ax.set_ylabel('Price (CNY)', fontsize=12, fontproperties=font_prop)
-        legend = ax.legend(handles=[red_marker, yellow_marker, current_price_line], 
+        legend = ax.legend(handles=[red_marker, blue_marker, yellow_marker, current_price_line], 
                           loc='upper left', fontsize=10, framealpha=0.9, 
                           prop=legend_font_prop)
     else:
@@ -308,7 +326,7 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
                     color='#1A365D', loc='center', y=1.01)
         ax.set_xlabel('Predict Date', fontsize=12)
         ax.set_ylabel('Price (CNY)', fontsize=12)
-        legend = ax.legend(handles=[red_marker, yellow_marker, current_price_line], 
+        legend = ax.legend(handles=[red_marker, blue_marker, yellow_marker, current_price_line], 
                           loc='upper left', fontsize=10, framealpha=0.9)
     
     ax.grid(True, linestyle=':', alpha=0.6, color='#888888')
@@ -412,9 +430,10 @@ def analyze():
     )
 
     png_data = img_buffer.getvalue()
-    
+    next_increase_pct = get_next_increase_percentage(result['predictions'])
+
     # 保存到缓存
-    save_png_to_cache(stock_name, stock_code, png_data, has_warning)
+    save_png_to_cache(stock_name, stock_code, png_data, has_warning, next_increase_pct)
     
     img_base64 = base64.b64encode(png_data).decode('utf-8')
 
@@ -450,11 +469,13 @@ def cache_list():
                 
                 status_path = file_path.replace('.png', '_status.json')
                 has_warning = False
+                next_increase_pct = None
                 if os.path.exists(status_path):
                     try:
                         with open(status_path, 'r', encoding='utf-8') as f:
                             status_data = json.load(f)
                             has_warning = status_data.get('has_warning', False)
+                            next_increase_pct = status_data.get('next_increase_pct')
                     except Exception:
                         pass
                 
@@ -462,11 +483,13 @@ def cache_list():
                     'name': stock_name,
                     'code': stock_code,
                     'cache_time': cache_time,
-                    'has_warning': has_warning
+                    'has_warning': has_warning,
+                    'next_increase_pct': next_increase_pct
                 })
     
-    # 按警告状态排序（有红点的置顶），然后按缓存时间排序
-    cached_stocks.sort(key=lambda x: (-x['has_warning'], x['cache_time']))
+    # 按警告状态分组，每组按可涨幅度从小到大排序
+    # 红色卡片（有警告）在前，白色卡片（无警告）在后
+    cached_stocks.sort(key=lambda x: (-x['has_warning'], x['next_increase_pct'] if x['next_increase_pct'] is not None else float('inf')))
     
     return jsonify({'success': True, 'cached_stocks': cached_stocks})
 
@@ -490,6 +513,31 @@ def load_cached():
         'success': True,
         'image': f'data:image/png;base64,{img_base64}'
     })
+
+@app.route('/api/delete-cached', methods=['POST'])
+def delete_cached():
+    """删除缓存的PNG图片和状态文件"""
+    data = request.get_json()
+    stock_name = data.get('stock_name')
+    stock_code = data.get('stock_code')
+    
+    if not stock_name or not stock_code:
+        return jsonify({'success': False, 'error': '参数错误'})
+    
+    try:
+        # 删除PNG文件
+        png_path = get_cache_file_path(stock_name, stock_code)
+        if os.path.exists(png_path):
+            os.remove(png_path)
+        
+        # 删除状态文件
+        status_path = png_path.replace('.png', '_status.json')
+        if os.path.exists(status_path):
+            os.remove(status_path)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 def get_csv_files_to_process(csv_file=None):
     """获取需要处理的CSV文件列表"""
@@ -539,6 +587,23 @@ def check_predictions_has_warning(predictions, threshold):
             if increase <= threshold:
                 return True
     return False
+
+def get_next_increase_percentage(predictions):
+    """获取下个交易日可涨幅度（百分比，保留一位小数）"""
+    if not predictions:
+        return None
+
+    pred = predictions[0]
+    space_10_100 = pred['space_10_100']
+    space_30_200 = pred['space_30_200']
+
+    movement_price = space_10_100['movement_price'] if space_10_100['movement_price'] < space_30_200['movement_price'] else space_30_200['movement_price']
+    last_price = space_10_100['last_price'] if space_10_100['movement_price'] < space_30_200['movement_price'] else space_30_200['last_price']
+
+    if last_price > 0:
+        increase = (movement_price - last_price) / last_price
+        return round(increase * 100, 1)
+    return None
 
 def batch_generate_cache(csv_file=None):
     """批量生成今日所有股票的PNG缓存"""
@@ -590,8 +655,12 @@ def batch_generate_cache(csv_file=None):
                     f.write(png_data)
                 
                 status_path = cache_path.replace('.png', '_status.json')
+                next_increase_pct = get_next_increase_percentage(result['predictions'])
+                status_data = {'has_warning': has_warning}
+                if next_increase_pct is not None:
+                    status_data['next_increase_pct'] = next_increase_pct
                 with open(status_path, 'w', encoding='utf-8') as f:
-                    json.dump({'has_warning': has_warning}, f)
+                    json.dump(status_data, f)
                 
                 success_count += 1
                 print("成功")

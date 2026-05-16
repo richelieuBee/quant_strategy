@@ -941,6 +941,7 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir, market_
     dates = []
     movement_prices = []
     last_prices = []
+    is_10_day = []  # 记录是否为10日异动
     
     for pred in predictions:
         dates.append(pred['date'])
@@ -950,9 +951,11 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir, market_
         if space_10_100['movement_price'] < space_30_200['movement_price']:
             movement_prices.append(space_10_100['movement_price'])
             last_prices.append(space_10_100['last_price'])
+            is_10_day.append(True)  # 10日异动
         else:
             movement_prices.append(space_30_200['movement_price'])
             last_prices.append(space_30_200['last_price'])
+            is_10_day.append(False)  # 30日异动
     
     plt.figure(figsize=(18, 7), dpi=120)
     ax = plt.subplot(111)
@@ -961,19 +964,28 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir, market_
     
     has_warning = False
 
-    for i, (date, price, current_price) in enumerate(zip(dates, movement_prices, last_prices)):
+    for i, (date, price, current_price, day_10) in enumerate(zip(dates, movement_prices, last_prices, is_10_day)):
+        # 检查涨幅是否超过阈值（用于警告判断）
+        has_node_warning = False
         if current_price > 0:
             increase = (price - current_price) / current_price
-            if increase > threshold:
-                marker_color = '#F6AE2D'
-                marker_edge = '#D49A00'
-            else:
-                marker_color = '#E94F37'
-                marker_edge = '#C73E3E'
-                has_warning = True
-        else:
+            if increase <= threshold:
+                has_node_warning = True
+        
+        # 根据异动类型和警告状态决定颜色
+        if has_node_warning:
+            # 涨幅超过阈值时显示红色
             marker_color = '#E94F37'
             marker_edge = '#C73E3E'
+            has_warning = True
+        elif day_10:
+            # 10日异动 - 蓝色
+            marker_color = '#2E86AB'
+            marker_edge = '#1a5f7a'
+        else:
+            # 30日异动 - 黄色
+            marker_color = '#F6AE2D'
+            marker_edge = '#D49A00'
 
         ax.scatter(date, price, s=120, marker='o', color=marker_color,
                    edgecolor=marker_edge, linewidth=2, zorder=5)
@@ -982,12 +994,15 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir, market_
 
     legend_font_prop = font_prop if font_prop else None
 
-    red_marker = mlines.Line2D([], [], marker='o', color='#E94F37', linestyle='None',
-                               markersize=10, markerfacecolor='#E94F37',
-                               markeredgecolor='#C73E3E', label=f'剩余涨幅≤{threshold_pct}%')
+    blue_marker = mlines.Line2D([], [], marker='o', color='#2E86AB', linestyle='None',
+                               markersize=10, markerfacecolor='#2E86AB',
+                               markeredgecolor='#1a5f7a', label='10日异动')
     yellow_marker = mlines.Line2D([], [], marker='o', color='#F6AE2D', linestyle='None',
                                   markersize=10, markerfacecolor='#F6AE2D',
-                                  markeredgecolor='#D49A00', label=f'剩余涨幅>{threshold_pct}%')
+                                  markeredgecolor='#D49A00', label='30日异动')
+    red_marker = mlines.Line2D([], [], marker='o', color='#E94F37', linestyle='None',
+                               markersize=10, markerfacecolor='#E94F37',
+                               markeredgecolor='#C73E3E', label='风险预警')
     
     # 创建当前价格虚线图例（先不设置标签，后面填充）
     current_price_line = mlines.Line2D([], [], color='#E94F37', linestyle='--', 
@@ -1032,7 +1047,7 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir, market_
                     loc='center', y=1.01)
         ax.set_xlabel('未来30个交易日异动价格', fontsize=12, fontproperties=font_prop)
         ax.set_ylabel('Price (CNY)', fontsize=12, fontproperties=font_prop)
-        legend = ax.legend(handles=[red_marker, yellow_marker, current_price_line], 
+        legend = ax.legend(handles=[red_marker, blue_marker, yellow_marker, current_price_line], 
                           loc='upper left', fontsize=10, framealpha=0.9, 
                           prop=legend_font_prop)
     else:
@@ -1040,7 +1055,7 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir, market_
                     color='#1A365D', loc='center', y=1.01)
         ax.set_xlabel('Predict Date', fontsize=12)
         ax.set_ylabel('Price (CNY)', fontsize=12)
-        legend = ax.legend(handles=[red_marker, yellow_marker, current_price_line], 
+        legend = ax.legend(handles=[red_marker, blue_marker, yellow_marker, current_price_line], 
                           loc='upper left', fontsize=10, framealpha=0.9)
     
     ax.grid(True, linestyle=':', alpha=0.6, color='#888888')
