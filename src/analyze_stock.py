@@ -426,13 +426,41 @@ def get_market_from_code(stock_code):
     """
     根据股票代码判断所属市场
     """
-    # 确保股票代码是6位
     stock_code = str(stock_code).zfill(6)
-    
+
     if stock_code.startswith('6'):
-        return 'sh'  # 沪市
+        return 'sh'
     else:
-        return 'sz'  # 深市
+        return 'sz'
+
+def get_market_category(stock_code):
+    """
+    根据股票代码判断市场类别
+    :return: 'main' (主板), 'dual' (双创), 'bj' (北交所)
+    """
+    stock_code = str(stock_code).zfill(6)
+
+    if stock_code.startswith('688'):
+        return 'dual'
+    elif stock_code.startswith('300'):
+        return 'dual'
+    elif stock_code.startswith('8') or stock_code.startswith('4'):
+        return 'bj'
+    else:
+        return 'main'
+
+def get_market_threshold(market_category):
+    """
+    根据市场类别获取涨幅阈值
+    """
+    if market_category == 'main':
+        return 0.1
+    elif market_category == 'dual':
+        return 0.2
+    elif market_category == 'bj':
+        return 0.3
+    else:
+        return 0.1
 
 def get_index_code_by_market(market):
     """
@@ -816,7 +844,7 @@ def analyze_single_stock(stock):
             print(f"15点之后，从明日开始预测: {current_date.strftime('%Y-%m-%d')}")
         
         count = 0
-        while count < 20:
+        while count < 30:
             # 检查是否是周末（0-4是工作日，5-6是周末）
             if current_date.weekday() < 5:
                 predict_date = current_date
@@ -844,6 +872,7 @@ def analyze_single_stock(stock):
         return {
             'stock': stock,
             'formatted_code': formatted_code,
+            'market_category': get_market_category(formatted_code),
             'predictions': predictions
         }
     except Exception as e:
@@ -891,19 +920,23 @@ def get_font_path():
             return path
     return None
 
-def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
+def plot_stock_movement(stock_name, stock_code, predictions, output_dir, market_category='main'):
     """
     生成股票异动价格折线图
     :param stock_name: 股票名称
     :param stock_code: 股票代码
     :param predictions: 预测数据列表
     :param output_dir: 输出目录
+    :param market_category: 市场类别 ('main', 'dual', 'bj')
     """
     font_path = get_font_path()
     if font_path:
         font_prop = FontProperties(fname=font_path)
     else:
         font_prop = None
+
+    threshold = get_market_threshold(market_category)
+    threshold_pct = int(threshold * 100)
     
     dates = []
     movement_prices = []
@@ -921,17 +954,17 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
             movement_prices.append(space_30_200['movement_price'])
             last_prices.append(space_30_200['last_price'])
     
-    plt.figure(figsize=(12, 7), dpi=120)
+    plt.figure(figsize=(18, 7), dpi=120)
     ax = plt.subplot(111)
     
     ax.plot(dates, movement_prices, color='#2E86AB', linewidth=2.5, label='Movement Price')
     
     has_warning = False
-    
+
     for i, (date, price, current_price) in enumerate(zip(dates, movement_prices, last_prices)):
         if current_price > 0:
             increase = (price - current_price) / current_price
-            if increase > 0.1:
+            if increase > threshold:
                 marker_color = '#F6AE2D'
                 marker_edge = '#D49A00'
             else:
@@ -941,22 +974,20 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
         else:
             marker_color = '#E94F37'
             marker_edge = '#C73E3E'
-        
-        ax.scatter(date, price, s=120, marker='o', color=marker_color, 
+
+        ax.scatter(date, price, s=120, marker='o', color=marker_color,
                    edgecolor=marker_edge, linewidth=2, zorder=5)
-    
-    # 添加节点颜色图例
+
     import matplotlib.lines as mlines
-    
-    # 获取图例标签字体
+
     legend_font_prop = font_prop if font_prop else None
-    
+
     red_marker = mlines.Line2D([], [], marker='o', color='#E94F37', linestyle='None',
-                               markersize=10, markerfacecolor='#E94F37', 
-                               markeredgecolor='#C73E3E', label='剩余涨幅≤10%')
+                               markersize=10, markerfacecolor='#E94F37',
+                               markeredgecolor='#C73E3E', label=f'剩余涨幅≤{threshold_pct}%')
     yellow_marker = mlines.Line2D([], [], marker='o', color='#F6AE2D', linestyle='None',
-                                  markersize=10, markerfacecolor='#F6AE2D', 
-                                  markeredgecolor='#D49A00', label='剩余涨幅>10%')
+                                  markersize=10, markerfacecolor='#F6AE2D',
+                                  markeredgecolor='#D49A00', label=f'剩余涨幅>{threshold_pct}%')
     
     # 创建当前价格虚线图例（先不设置标签，后面填充）
     current_price_line = mlines.Line2D([], [], color='#E94F37', linestyle='--', 
@@ -999,7 +1030,7 @@ def plot_stock_movement(stock_name, stock_code, predictions, output_dir):
         ax.set_title(title_text, fontsize=18, fontweight='bold', 
                     color='#1A365D', fontproperties=title_font, 
                     loc='center', y=1.01)
-        ax.set_xlabel('未来20日异动价格', fontsize=12, fontproperties=font_prop)
+        ax.set_xlabel('未来30个交易日异动价格', fontsize=12, fontproperties=font_prop)
         ax.set_ylabel('Price (CNY)', fontsize=12, fontproperties=font_prop)
         legend = ax.legend(handles=[red_marker, yellow_marker, current_price_line], 
                           loc='upper left', fontsize=10, framealpha=0.9, 
@@ -1037,10 +1068,16 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
     """
     分析股票
     """
-    # 确保输出目录存在
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
-    # 读取股票列表
+
+    png_dir = os.path.join('output', 'png')
+    if os.path.exists(png_dir):
+        for file in os.listdir(png_dir):
+            file_path = os.path.join(png_dir, file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        print(f"已清空 {png_dir} 目录")
+
     stock_list = read_stock_list(csv_path)
     print(f"读取到 {len(stock_list)} 支股票")
     
@@ -1128,7 +1165,8 @@ def analyze_stocks(csv_path=DEFAULT_STOCK_CSV_PATH):
             f_md.write("\n")
             
             # 生成折线图
-            plot_stock_movement(stock['name'], formatted_code, predictions, date_output_dir)
+            market_category = result.get('market_category', 'main')
+            plot_stock_movement(stock['name'], formatted_code, predictions, date_output_dir, market_category)
     
     print(f"\n分析完成，结果保存到:")
     print(f"合并异动 (CSV): {output_file}")
