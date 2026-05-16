@@ -15,43 +15,45 @@ def configure_matplotlib_fonts():
     
     # 定义可能的中文字体路径（按优先级排序）
     font_paths = [
+        '/root/fonts/msyh.ttf',
+        '/root/fonts/msyh.ttc',
+        '/usr/share/fonts/microsoft/msyh.ttf',
+        '/usr/share/fonts/microsoft/msyh.ttc',
+        './fonts/msyh.ttf',
+        './fonts/msyh.ttc',
+        'C:/Windows/Fonts/msyh.ttc',
+        'C:/Windows/Fonts/msyh.ttf',
         '/usr/share/fonts/google-droid-sans-fonts/DroidSansFallbackFull.ttf',
         '/usr/share/fonts/chinese/NotoSansCJKsc.otf',
         '/usr/share/fonts/chinese/NotoSansCJKsc-Regular.otf',
-        '/usr/share/fonts/chinese/NotoSansCJKsc-Regular.ttf',
-        '/usr/share/fonts/google-noto-vf/NotoSansCJKsc-Regular.otf',
-        '/usr/share/fonts/google-noto-vf/NotoSansCJKsc-subset.otf',
-        '/usr/share/fonts/google-noto-vf/NotoSansSC-Regular.otf',
         '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
         '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
         'C:/Windows/Fonts/simhei.ttf',
-        'C:/Windows/Fonts/msyh.ttc',
     ]
     
-    # 清除matplotlib字体缓存
-    matplotlib_cache_dir = matplotlib.get_cachedir()
-    print(f"matplotlib缓存目录: {matplotlib_cache_dir}")
+    # 配置matplotlib - 使用微软雅黑作为首选
+    import matplotlib.pyplot as plt
     
-    # 找到第一个存在的字体
+    # 解决中文乱码核心代码
+    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.rcParams['font.family'] = 'sans-serif'
+    
+    # 尝试找到实际存在的字体文件
     found_font = None
     for font_path in font_paths:
         if os.path.exists(font_path):
             found_font = font_path
             print(f"找到中文字体: {font_path}")
+            # 使用字体管理器加载字体
+            from matplotlib.font_manager import FontProperties
+            font_prop = FontProperties(fname=font_path)
+            plt.rcParams['font.sans-serif'] = [font_prop.get_name()]
+            print(f"使用中文字体配置: {font_path}")
             break
     
-    # 配置matplotlib
-    import matplotlib.pyplot as plt
-    if found_font:
-        font_name = os.path.basename(found_font).replace('.otf', '').replace('.ttf', '')
-        plt.rcParams['font.sans-serif'] = [font_name]
-        plt.rcParams['font.family'] = 'sans-serif'
-        plt.rcParams['axes.unicode_minus'] = False
-        print(f"使用中文字体配置: {found_font}")
-    else:
-        print("警告：未找到中文字体，尝试使用系统字体...")
-        plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
-        plt.rcParams['axes.unicode_minus'] = False
+    if not found_font:
+        print("警告：未找到中文字体文件，但已配置字体名称")
     
     return found_font
 
