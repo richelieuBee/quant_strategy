@@ -13,8 +13,12 @@ def configure_matplotlib_fonts():
     import matplotlib
     matplotlib.use('Agg')
     
-    # 定义可能的中文字体路径（按优先级排序）
+    # 从config.json读取字体路径配置
+    import json
+    config_path = os.path.join(project_root, 'config.json')
     font_paths = [
+        '/usr/share/fonts/chinese/msyh.ttc',
+        '/usr/share/fonts/chinese/SimHei.ttf',
         '/root/fonts/msyh.ttf',
         '/root/fonts/msyh.ttc',
         '/usr/share/fonts/microsoft/msyh.ttf',
@@ -23,13 +27,18 @@ def configure_matplotlib_fonts():
         './fonts/msyh.ttc',
         'C:/Windows/Fonts/msyh.ttc',
         'C:/Windows/Fonts/msyh.ttf',
-        '/usr/share/fonts/google-droid-sans-fonts/DroidSansFallbackFull.ttf',
-        '/usr/share/fonts/chinese/NotoSansCJKsc.otf',
-        '/usr/share/fonts/chinese/NotoSansCJKsc-Regular.otf',
-        '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
-        '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
         'C:/Windows/Fonts/simhei.ttf',
     ]
+    
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                if 'font_paths' in config and isinstance(config['font_paths'], list):
+                    font_paths = config['font_paths']
+                    print(f"从配置文件加载字体路径: {len(font_paths)} 个")
+        except Exception as e:
+            print(f"读取字体配置失败: {e}")
     
     # 配置matplotlib - 使用微软雅黑作为首选
     import matplotlib.pyplot as plt

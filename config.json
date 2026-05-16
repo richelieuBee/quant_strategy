@@ -1,3 +1,17 @@
 {
-    "tushare_token": "ab9453d04db2ae39803dc68119c9243dbde83e6b95ead90dcfb8450a"
+    "tushare_token": "ab9453d04db2ae39803dc68119c9243dbde83e6b95ead90dcfb8450a",
+    "font_paths": [
+        "/usr/share/fonts/chinese/msyh.ttc",
+        "/usr/share/fonts/chinese/SimHei.ttf",
+        "/root/fonts/msyh.ttf",
+        "/root/fonts/msyh.ttc",
+        "/usr/share/fonts/microsoft/msyh.ttf",
+        "/usr/share/fonts/microsoft/msyh.ttc",
+        "./fonts/msyh.ttf",
+        "./fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyh.ttf",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/msyh.ttc"
+    ]
 }
