@@ -13,6 +13,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.font_manager import FontProperties
+plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', 'SimHei']
+plt.rcParams['axes.unicode_minus'] = False
 from flask import Flask, render_template, request, jsonify
 from io import BytesIO
 import base64
@@ -548,6 +550,6 @@ if __name__ == '__main__':
     scheduler = run_scheduler()
     
     try:
-        app.run(debug=True, port=5000)
+        app.run(debug=False, host='0.0.0.0', port=5000)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
