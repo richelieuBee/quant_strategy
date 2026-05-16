@@ -8,13 +8,54 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 sys.path.insert(0, project_root)
 
-import matplotlib
-matplotlib.use('Agg')
+# 配置matplotlib字体
+def configure_matplotlib_fonts():
+    import matplotlib
+    matplotlib.use('Agg')
+    
+    # 定义可能的中文字体路径
+    font_paths = [
+        '/usr/share/fonts/chinese/NotoSansCJKsc-Regular.otf',
+        '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
+        '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
+        '/usr/share/fonts/google-noto-sans-cjk-sc/NotoSansCJKsc-Regular.otf',
+        '/usr/share/fonts/ancient-scripts/simhei.ttf',
+        '/usr/share/fonts/TTF/simhei.ttf',
+        '/usr/share/fonts/google-noto-vf',
+        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+        '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+        'C:/Windows/Fonts/simhei.ttf',
+        'C:/Windows/Fonts/msyh.ttc',
+    ]
+    
+    # 找到第一个存在的字体
+    found_font = None
+    for font_path in font_paths:
+        if os.path.exists(font_path):
+            found_font = font_path
+            break
+    
+    # 配置matplotlib
+    import matplotlib.pyplot as plt
+    if found_font:
+        print(f"使用中文字体: {found_font}")
+        plt.rcParams['font.sans-serif'] = ['SimHei', 'WenQuanYi Micro Hei', 'Noto Sans CJK SC']
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['axes.unicode_minus'] = False
+    else:
+        print("警告：未找到中文字体，可能会出现乱码")
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+        plt.rcParams['axes.unicode_minus'] = False
+    
+    return found_font
+
+# 配置字体
+CHINESE_FONT_PATH = configure_matplotlib_fonts()
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.font_manager import FontProperties
-plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', 'SimHei']
-plt.rcParams['axes.unicode_minus'] = False
 from flask import Flask, render_template, request, jsonify
 from io import BytesIO
 import base64
