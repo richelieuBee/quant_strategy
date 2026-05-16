@@ -373,6 +373,8 @@ def analyze():
     if not stock_name or not stock_code:
         return jsonify({'error': f'未找到股票: {stock_input}'})
 
+    stock_code = format_stock_code(stock_code)
+
     # 尝试从缓存加载
     cached_png = load_cached_png(stock_name, stock_code)
     if cached_png:
@@ -565,7 +567,7 @@ def batch_generate_cache(csv_file=None):
                 threshold = get_market_threshold(result['market_category'])
                 has_warning = check_predictions_has_warning(result['predictions'], threshold)
                 
-                img_buffer = plot_stock_movement_to_buffer(
+                img_buffer, _ = plot_stock_movement_to_buffer(
                     result['stock']['name'],
                     result['formatted_code'],
                     result['predictions'],
