@@ -155,6 +155,10 @@
             margin-bottom: 30px;
             width: 100%;
         }
+        .search-container {
+            flex: 1;
+            position: relative;
+        }
         .search-box input {
             width: 100%;
             min-width: 300px;
@@ -167,6 +171,52 @@
         .search-box input:focus {
             outline: none;
             border-color: #2e86ab;
+        }
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 5px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 100;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .search-suggestions.show {
+            display: block;
+        }
+        .suggestion-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .suggestion-item:hover {
+            background: #f8fafc;
+        }
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        .suggestion-item .stock-name {
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .suggestion-item .stock-code {
+            font-size: 13px;
+            color: #64748b;
+            margin-left: auto;
+        }
+        .suggestion-item .stock-pinyin {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-left: 10px;
         }
         .search-box button {
             padding: 15px 30px;
@@ -195,6 +245,8 @@
         .result {
             margin-top: 30px;
             display: none;
+            width: 100%;
+            overflow-x: auto;
         }
         .result.show {
             display: block;
@@ -224,19 +276,28 @@
             background: #fca5a5;
             border-color: #dc2626;
         }
-        .chart-container {
+        .chart-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: auto;
             background: #f8fafc;
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border-radius: 0;
+            padding: 0;
+        }
+        .chart-container {
+            width: 100%;
             min-height: 400px;
+            text-align: center;
+            background: #f8fafc;
+            padding: 10px 0;
         }
         .chart-container img {
             max-width: 100%;
+            max-height: calc(100vh - 200px);
+            width: 100%;
             height: auto;
-            border-radius: 10px;
+            cursor: zoom-in;
+            display: block;
         }
         .chart-container.empty {
             color: #94a3b8;
@@ -251,83 +312,185 @@
             display: block;
         }
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #e2e8f0;
-            border-top-color: #2e86ab;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2e86ab;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 15px;
         }
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .error {
+            display: none;
             background: #fee2e2;
+            border: 1px solid #fca5a5;
             color: #dc2626;
-            padding: 15px 20px;
+            padding: 15px;
             border-radius: 10px;
             margin-top: 20px;
-            display: none;
         }
         .error.show {
             display: block;
         }
         .hint {
-            color: #64748b;
-            font-size: 14px;
-            margin-top: 15px;
             text-align: center;
-        }
-        .search-container {
-            position: relative;
-            flex: 1;
-            width: 100%;
-        }
-        .search-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid #2e86ab;
-            border-top: none;
-            border-radius: 0 0 10px 10px;
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-        .search-suggestions.show {
-            display: block;
-        }
-        .suggestion-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            border-bottom: 1px solid #f1f5f9;
-            transition: background 0.2s;
-        }
-        .suggestion-item:last-child {
-            border-bottom: none;
-            border-radius: 0 0 8px 8px;
-        }
-        .suggestion-item:hover {
-            background: #f1f5f9;
-        }
-        .suggestion-item .stock-name {
-            font-weight: 600;
-            color: #1e293b;
-        }
-        .suggestion-item .stock-code {
-            font-size: 12px;
-            color: #64748b;
-            margin-left: 10px;
-        }
-        .suggestion-item .stock-pinyin {
-            font-size: 12px;
             color: #94a3b8;
-            margin-left: 5px;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        /* 响应式设计 - 手机端 */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                max-width: 100%;
+            }
+            .sidebar {
+                width: 100%;
+                max-height: auto;
+                padding: 15px;
+                border-radius: 15px;
+                order: 2;
+            }
+            .cache-list {
+                display: flex;
+                gap: 10px;
+                overflow-x: auto;
+                padding-bottom: 10px;
+                scrollbar-width: none;
+            }
+            .cache-list::-webkit-scrollbar {
+                display: none;
+            }
+            .cache-item {
+                flex-shrink: 0;
+                width: 140px;
+                padding: 12px;
+                margin-bottom: 0;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .cache-item .stock-name {
+                font-size: 14px;
+            }
+            .cache-item .stock-code {
+                font-size: 12px;
+            }
+            .cache-item .increase-pct {
+                font-size: 20px;
+                margin-top: 5px;
+            }
+            .main-content {
+                width: 100%;
+                order: 1;
+                padding: 20px;
+            }
+            .main-content h1 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+            .search-box {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .search-box input {
+                min-width: auto;
+                height: 45px;
+                font-size: 16px;
+            }
+            .search-box button {
+                height: 45px;
+                padding: 0 20px;
+                font-size: 16px;
+            }
+            .chart-container {
+                padding: 10px;
+                overflow-x: auto;
+            }
+            .chart-container img {
+                max-width: none;
+            }
+            .result-header h2 {
+                font-size: 16px;
+            }
+            .delete-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            .hint {
+                font-size: 12px;
+            }
+        }
+
+        /* 图片放大浮窗 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+        .image-modal.show {
+            display: flex;
+        }
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s;
+        }
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 手机端浮窗图片旋转 */
+        @media screen and (max-width: 768px) {
+            .image-modal img {
+                width: 100vh;
+                height: 100vw;
+                max-width: none;
+                max-height: none;
+                object-fit: contain;
+                transform: rotate(90deg);
+            }
+            .close-btn {
+                top: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+                font-size: 28px;
+            }
         }
     </style>
 </head>
@@ -368,12 +531,20 @@
                     <h2 id="stockTitle"></h2>
                     <button class="delete-btn" onclick="deleteCache()">删除</button>
                 </div>
-                <div class="chart-container" id="chartContainer">
-                    <img id="chartImg" alt="股票异动图">
+                <div class="chart-wrapper">
+                    <div class="chart-container" id="chartContainer">
+                        <img id="chartImg" alt="股票异动图">
+                    </div>
                 </div>
             </div>
             <p class="hint">支持输入股票名称（如：利通电子）或股票代码（如：603629）</p>
         </div>
+    </div>
+    
+    <!-- 图片放大浮窗 -->
+    <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+        <img id="modalImage" alt="放大图表">
+        <button class="close-btn" onclick="closeImageModal()">×</button>
     </div>
 
     <script>
@@ -382,26 +553,18 @@
 
         function handleSearchInput(event) {
             const query = event.target.value.trim();
-
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
-
+            if (searchTimeout) clearTimeout(searchTimeout);
             if (query.length < 1) {
                 hideSuggestions();
                 return;
             }
-
-            searchTimeout = setTimeout(() => {
-                searchStocks(query);
-            }, 200);
+            searchTimeout = setTimeout(() => searchStocks(query), 200);
         }
 
         async function searchStocks(query) {
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
-
                 if (data.success && data.stocks && data.stocks.length > 0) {
                     showSuggestions(data.stocks);
                 } else {
@@ -443,13 +606,6 @@
             }
         }
 
-        document.addEventListener('click', function(event) {
-            const searchContainer = document.querySelector('.search-container');
-            if (!searchContainer.contains(event.target)) {
-                hideSuggestions();
-            }
-        });
-
         async function analyzeStock() {
             const stockInput = document.getElementById('stockInput').value.trim();
             const searchBtn = document.getElementById('searchBtn');
@@ -470,12 +626,9 @@
             try {
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ stock: stockInput })
                 });
-
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
@@ -484,11 +637,22 @@
                 }
 
                 currentStockCode = data.stock_code;
-                document.getElementById('stockTitle').textContent =
-                    `${data.stock_name} (${data.stock_code})`;
-                document.getElementById('chartImg').src = data.image;
-                result.classList.add('show');
+                document.getElementById('stockTitle').textContent = `${data.stock_name} (${data.stock_code})`;
+                const chartImg = document.getElementById('chartImg');
+                const chartWrapper = document.querySelector('.chart-wrapper');
                 
+                chartImg.src = data.image;
+                chartImg.onload = function() {
+                    if (chartWrapper) {
+                        chartWrapper.scrollLeft = 0;
+                        window.getComputedStyle(chartWrapper).width;
+                        chartWrapper.scrollLeft = 0;
+                    }
+                };
+                if (chartWrapper) {
+                    chartWrapper.scrollLeft = 0;
+                }
+                result.classList.add('show');
                 loadCacheList();
             } catch (err) {
                 showError('网络错误，请检查网络连接后重试');
@@ -508,9 +672,8 @@
             try {
                 const response = await fetch('/api/cache-list');
                 const data = await response.json();
-                
                 const cacheList = document.getElementById('cacheList');
-                
+
                 if (!data.success || !data.cached_stocks || data.cached_stocks.length === 0) {
                     cacheList.innerHTML = `
                         <li class="empty-state">
@@ -526,20 +689,29 @@
                     return;
                 }
 
-                cacheList.innerHTML = data.cached_stocks.map(stock => {
+                // 按警告状态和涨幅排序
+                const sortedStocks = [...data.cached_stocks].sort((a, b) => {
+                    // 警告状态优先
+                    if (a.has_warning !== b.has_warning) {
+                        return a.has_warning ? -1 : 1;
+                    }
+                    // 按涨幅从小到大排序
+                    return (a.next_increase_pct || 0) - (b.next_increase_pct || 0);
+                });
+
+                cacheList.innerHTML = sortedStocks.map(stock => {
                     const isActive = stock.code === currentStockCode;
                     const isWarning = stock.has_warning;
                     const increasePct = stock.next_increase_pct;
-                    const increaseClass = increasePct !== undefined && increasePct !== null ? (isWarning ? 'warning' : '') : '';
+                    const increaseClass = increasePct !== undefined && increasePct !== null && isWarning ? ' warning' : '';
                     return `
-                        <li class="cache-item${isActive ? ' active' : ''}${isWarning ? ' warning' : ''}"
-                            onclick="loadCachedStock('${stock.name}', '${stock.code}')">
+                        <li class="cache-item${isActive ? ' active' : ''}${isWarning ? ' warning' : ''}" onclick="loadCachedStock('${stock.name}', '${stock.code}')">
                             <div class="info">
                                 <div class="stock-name">${stock.name}${isWarning ? ' ⚠️' : ''}</div>
                                 <div class="stock-code">${stock.code}</div>
                                 <div class="cache-time">${stock.cache_time}</div>
                             </div>
-                            ${increasePct !== undefined && increasePct !== null ? `<div class="increase-pct${increaseClass ? ' ' + increaseClass : ''}">${increasePct}%</div>` : ''}
+                            ${increasePct !== undefined && increasePct !== null ? `<div class="increase-pct${increaseClass}">${increasePct}%</div>` : ''}
                         </li>
                     `;
                 }).join('');
@@ -560,82 +732,115 @@
             try {
                 const response = await fetch('/api/load-cached', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ stock_name: stockName, stock_code: stockCode })
                 });
-
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
-                    showError(data.error || '加载缓存失败');
+                    showError(data.error || '加载失败，请稍后重试');
                     return;
                 }
 
                 currentStockCode = stockCode;
                 document.getElementById('stockTitle').textContent = `${stockName} (${stockCode})`;
-                document.getElementById('chartImg').src = data.image;
-                result.classList.add('show');
+                const chartImg = document.getElementById('chartImg');
+                const chartWrapper = document.querySelector('.chart-wrapper');
                 
+                chartImg.src = data.image;
+                chartImg.onload = function() {
+                    if (chartWrapper) {
+                        chartWrapper.scrollLeft = 0;
+                        window.getComputedStyle(chartWrapper).width;
+                        chartWrapper.scrollLeft = 0;
+                    }
+                };
+                if (chartWrapper) {
+                    chartWrapper.scrollLeft = 0;
+                }
+                result.classList.add('show');
                 loadCacheList();
             } catch (err) {
-                showError('网络错误');
+                showError('网络错误，请检查网络连接后重试');
             } finally {
                 loading.classList.remove('show');
             }
         }
 
         async function deleteCache() {
-            const stockTitle = document.getElementById('stockTitle').textContent;
-            const match = stockTitle.match(/(.+?)\s*\((\d{6})\)/);
-            if (!match) {
-                showError('无法获取股票信息');
-                return;
-            }
-            
-            const stockName = match[1].trim();
-            const stockCode = match[2];
-            
-            if (!confirm(`确定要删除 ${stockName} (${stockCode}) 的缓存结果吗？`)) {
-                return;
-            }
-            
+            if (!currentStockCode) return;
+
+            if (!confirm('确定要删除此缓存吗？')) return;
+
             try {
                 const response = await fetch('/api/delete-cached', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ stock_name: stockName, stock_code: stockCode })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_code: currentStockCode })
                 });
-                
                 const data = await response.json();
-                
-                if (!response.ok || !data.success) {
-                    showError(data.error || '删除失败');
-                    return;
-                }
-                
-                // 删除成功后，加载下一个股票
-                await loadCacheList();
-                
-                // 获取缓存列表，找到下一个股票
-                const cacheItems = document.querySelectorAll('.cache-item');
-                if (cacheItems.length > 0) {
-                    const firstItem = cacheItems[0];
-                    firstItem.click();
-                } else {
-                    // 如果没有缓存了，隐藏结果
-                    const result = document.getElementById('result');
-                    result.classList.remove('show');
-                    document.getElementById('stockInput').value = '';
+
+                if (data.success) {
                     currentStockCode = '';
+                    document.getElementById('result').classList.remove('show');
+                    loadCacheList();
+                } else {
+                    showError(data.error || '删除失败');
                 }
             } catch (err) {
                 showError('网络错误');
             }
         }
+
+        function openImageModal() {
+            const chartImg = document.getElementById('chartImg');
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            
+            if (chartImg.src) {
+                modalImage.src = chartImg.src;
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const chartImg = document.getElementById('chartImg');
+            if (chartImg) {
+                chartImg.addEventListener('click', openImageModal);
+            }
+            
+            const chartWrapper = document.querySelector('.chart-wrapper');
+            if (chartWrapper) {
+                const observer = new MutationObserver(function(mutations) {
+                    chartWrapper.scrollLeft = 0;
+                });
+                observer.observe(chartWrapper, { childList: true, subtree: true });
+                
+                setTimeout(function() {
+                    chartWrapper.scrollLeft = 0;
+                }, 100);
+            }
+        });
+
+        function resetScrollPosition() {
+            const chartWrapper = document.querySelector('.chart-wrapper');
+            if (chartWrapper) {
+                requestAnimationFrame(function() {
+                    chartWrapper.scrollLeft = 0;
+                });
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') closeImageModal();
+        });
 
         loadCacheList();
     </script>
