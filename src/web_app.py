@@ -15,6 +15,7 @@ def configure_matplotlib_fonts():
     
     # 定义可能的中文字体路径（按优先级排序）
     font_paths = [
+        '/usr/share/fonts/google-droid-sans-fonts/DroidSansFallbackFull.ttf',
         '/usr/share/fonts/chinese/NotoSansCJKsc.otf',
         '/usr/share/fonts/chinese/NotoSansCJKsc-Regular.otf',
         '/usr/share/fonts/chinese/NotoSansCJKsc-Regular.ttf',
@@ -150,11 +151,15 @@ def load_cached_png(stock_name, stock_code):
             return f.read()
     return None
 
-def save_png_to_cache(stock_name, stock_code, png_data):
-    """保存PNG图片到缓存"""
+def save_png_to_cache(stock_name, stock_code, png_data, has_warning=False):
+    """保存PNG图片到缓存，同时保存状态信息"""
     cache_path = get_cache_file_path(stock_name, stock_code)
     with open(cache_path, 'wb') as f:
         f.write(png_data)
+    
+    status_path = cache_path.replace('.png', '_status.json')
+    with open(status_path, 'w', encoding='utf-8') as f:
+        json.dump({'has_warning': has_warning}, f, ensure_ascii=False)
 
 def search_stock_by_name(stock_name):
     data_dir = os.path.join(project_root, 'data')
@@ -307,7 +312,7 @@ def plot_stock_movement_to_buffer(stock_name, stock_code, predictions, market_ca
     plt.close()
     img_buffer.seek(0)
     
-    return img_buffer
+    return img_buffer, has_warning
 
 @app.route('/')
 def index():
@@ -386,7 +391,7 @@ def analyze():
     if not result:
         return jsonify({'error': f'无法获取 {stock_code} 的数据'})
 
-    img_buffer = plot_stock_movement_to_buffer(
+    img_buffer, has_warning = plot_stock_movement_to_buffer(
         result['stock']['name'],
         result['formatted_code'],
         result['predictions'],
@@ -396,7 +401,7 @@ def analyze():
     png_data = img_buffer.getvalue()
     
     # 保存到缓存
-    save_png_to_cache(stock_name, stock_code, png_data)
+    save_png_to_cache(stock_name, stock_code, png_data, has_warning)
     
     img_base64 = base64.b64encode(png_data).decode('utf-8')
 
