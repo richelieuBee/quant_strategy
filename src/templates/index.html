@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票异动分析</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>" type="image/svg+xml">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1500px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            flex-shrink: 0;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        .sidebar h3 {
+            color: #1a365d;
+            font-size: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar h3::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: linear-gradient(135deg, #2e86ab 0%, #1a365d 100%);
+            border-radius: 2px;
+        }
+        .cache-list {
+            list-style: none;
+        }
+        .cache-item {
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .cache-item:hover {
+            background: #f1f5f9;
+            border-color: #2e86ab;
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(46, 134, 171, 0.15);
+        }
+        .cache-item.active {
+            background: linear-gradient(135deg, #e8f4f8 0%, #dbeafe 100%);
+            border-color: #2e86ab;
+        }
+        .cache-item.warning {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-color: #ef4444;
+        }
+        .cache-item.warning:hover {
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+            border-color: #dc2626;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
+        }
+        .cache-item.warning .stock-name {
+            color: #991b1b;
+        }
+        .cache-item .stock-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 15px;
+        }
+        .cache-item .stock-code {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .cache-item .cache-time {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+        }
+        .empty-state svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        .main-content {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            min-width: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #1a365d;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #2e86ab;
+        }
+        .search-box button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #2e86ab 0%, #1a365d 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .search-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(46, 134, 171, 0.4);
+        }
+        .search-box button:active {
+            transform: translateY(0);
+        }
+        .search-box button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result h2 {
+            color: #2e86ab;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        .chart-container {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .chart-container.empty {
+            color: #94a3b8;
+            text-align: center;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        .loading.show {
+            display: block;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #2e86ab;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        .error.show {
+            display: block;
+        }
+        .hint {
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .refresh-btn {
+            float: right;
+            background: none;
+            border: 1px solid #cbd5e0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #f8fafc;
+            border-color: #2e86ab;
+            color: #2e86ab;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>今日缓存</h3>
+            <button class="refresh-btn" onclick="loadCacheList()">刷新</button>
+            <ul class="cache-list" id="cacheList">
+                <li class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z"/>
+                        <path d="M19 19v-6a2 2 0 00-2-2h-2a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z"/>
+                        <path d="M9 9h6"/>
+                        <path d="M12 12h.01"/>
+                    </svg>
+                    <p>暂无缓存数据</p>
+                </li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <h1>股票异动价分析</h1>
+            <div class="search-box">
+                <input type="text" id="stockInput" placeholder="请输入股票名称或代码，如：利通电子 或 603629" onkeypress="handleKeyPress(event)">
+                <button id="searchBtn" onclick="analyzeStock()">分析</button>
+            </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在分析股票数据，请稍候...</p>
+            </div>
+            <div class="error" id="error"></div>
+            <div class="result" id="result">
+                <h2 id="stockTitle"></h2>
+                <div class="chart-container" id="chartContainer">
+                    <img id="chartImg" alt="股票异动图">
+                </div>
+            </div>
+            <p class="hint">支持输入股票名称（如：利通电子）或股票代码（如：603629）</p>
+        </div>
+    </div>
+
+    <script>
+        let currentStockCode = '';
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                analyzeStock();
+            }
+        }
+
+        async function analyzeStock() {
+            const stockInput = document.getElementById('stockInput').value.trim();
+            const searchBtn = document.getElementById('searchBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const result = document.getElementById('result');
+
+            if (!stockInput) {
+                showError('请输入股票名称或代码');
+                return;
+            }
+
+            searchBtn.disabled = true;
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ stock: stockInput })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    showError(data.error || '分析失败，请稍后重试');
+                    return;
+                }
+
+                currentStockCode = data.stock_code;
+                document.getElementById('stockTitle').textContent =
+                    `${data.stock_name} (${data.stock_code})`;
+                document.getElementById('chartImg').src = data.image;
+                result.classList.add('show');
+                
+                loadCacheList();
+            } catch (err) {
+                showError('网络错误，请检查网络连接后重试');
+            } finally {
+                searchBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.classList.add('show');
+        }
+
+        async function loadCacheList() {
+            try {
+                const response = await fetch('/api/cache-list');
+                const data = await response.json();
+                
+                const cacheList = document.getElementById('cacheList');
+                
+                if (!data.success || !data.cached_stocks || data.cached_stocks.length === 0) {
+                    cacheList.innerHTML = `
+                        <li class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z"/>
+                                <path d="M19 19v-6a2 2 0 00-2-2h-2a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z"/>
+                                <path d="M9 9h6"/>
+                                <path d="M12 12h.01"/>
+                            </svg>
+                            <p>暂无缓存数据</p>
+                        </li>
+                    `;
+                    return;
+                }
+
+                cacheList.innerHTML = data.cached_stocks.map(stock => {
+                    const isActive = stock.code === currentStockCode;
+                    const isWarning = stock.has_warning;
+                    return `
+                        <li class="cache-item${isActive ? ' active' : ''}${isWarning ? ' warning' : ''}"
+                            onclick="loadCachedStock('${stock.name}', '${stock.code}')">
+                            <div class="stock-name">${stock.name}${isWarning ? ' ⚠️' : ''}</div>
+                            <div class="stock-code">${stock.code}</div>
+                            <div class="cache-time">${stock.cache_time}</div>
+                        </li>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('加载缓存列表失败:', err);
+            }
+        }
+
+        async function loadCachedStock(stockName, stockCode) {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const result = document.getElementById('result');
+
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/load-cached', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ stock_name: stockName, stock_code: stockCode })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    showError(data.error || '加载缓存失败');
+                    return;
+                }
+
+                currentStockCode = stockCode;
+                document.getElementById('stockTitle').textContent = `${stockName} (${stockCode})`;
+                document.getElementById('chartImg').src = data.image;
+                result.classList.add('show');
+                
+                loadCacheList();
+            } catch (err) {
+                showError('网络错误');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        loadCacheList();
+    </script>
+</body>
+</html>
