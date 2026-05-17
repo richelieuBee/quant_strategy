@@ -342,6 +342,61 @@
             font-size: 14px;
             margin-top: 20px;
         }
+        .rules-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .rules-box h4 {
+            color: #1a365d;
+            font-size: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rules-box h4::before {
+            content: '';
+            width: 3px;
+            height: 16px;
+            background: #2e86ab;
+            border-radius: 2px;
+        }
+        .rules-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .rules-list li {
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .rules-list li::before {
+            content: '•';
+            position: absolute;
+            left: 5px;
+            color: #2e86ab;
+            font-weight: bold;
+        }
+        .disclaimer {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            border: 1px solid #fed7aa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .disclaimer p {
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.8;
+            margin: 0;
+        }
 
         /* 响应式设计 - 手机端 */
         @media screen and (max-width: 768px) {
@@ -415,6 +470,7 @@
             .chart-container {
                 padding: 10px;
                 overflow-x: auto;
+                min-height: auto;
             }
             .chart-container img {
                 max-width: none;
@@ -427,6 +483,22 @@
                 font-size: 14px;
             }
             .hint {
+                font-size: 12px;
+            }
+            .rules-box {
+                padding: 15px;
+                margin-top: 20px;
+            }
+            .rules-box h4 {
+                font-size: 14px;
+            }
+            .rules-list li {
+                font-size: 12px;
+            }
+            .disclaimer {
+                padding: 12px;
+            }
+            .disclaimer p {
                 font-size: 12px;
             }
         }
@@ -538,6 +610,18 @@
                 </div>
             </div>
             <p class="hint">支持输入股票名称（如：利通电子）或股票代码（如：603629）</p>
+            
+            <div class="rules-box">
+                <h4>使用说明</h4>
+                <ul class="rules-list">
+                    <li><strong>查询时间说明：</strong>15:00前查询显示的是上一个交易日的数据，15:00后查询显示的是本交易日的数据</li>
+                    <li><strong>定时更新：</strong>系统会在交易日收盘后（15:30）自动更新本月热点股数据，确保您获取最新的市场信息</li>
+                </ul>
+                
+                <div class="disclaimer">
+                    <p><strong>⚠️ 免责声明：</strong>本工具仅用于股票数据分析和学习参考，不构成任何投资建议或投资指导。股市有风险，投资需谨慎，请您根据自身情况独立做出投资决策，本工具不对任何投资行为负责。</p>
+                </div>
+            </div>
         </div>
     </div>
     
