@@ -483,89 +483,104 @@ def find_date_range(end_date, days, stock_data):
     """
     寻找日期范围
     从end_date开始倒数，找到days个交易日的起始日期
+    规则：
+    - 15点之前：开始倒数的交易日是昨天（end_date - 1）
+    - 15点之后：开始倒数的交易日是今天（end_date）
     """
-    cnt = days
-    # 从end_date的前一天开始倒数，只保留日期部分
-    current_date = (end_date).date()
-    
     # 获取今天的日期，只保留日期部分
     today = datetime.now().date()
     # 获取当前时间，判断是否在15点之前
     now = datetime.now()
     is_before_15 = now.hour < 15
-    
+
+    # 获取end_date的日期部分
+    end_date_only = end_date.date() if hasattr(end_date, 'date') else end_date
+
+    # 根据15点规则和end_date与today的关系决定起始日期
+    if end_date_only > today:
+        # end_date是未来日期，根据is_before_15决定从哪天开始倒数
+        if is_before_15:
+            # 15点之前：未来日期，倒数从end_date的前一天开始
+            cnt = days
+            current_date = end_date_only - timedelta(days=1)
+        else:
+            # 15点之后：未来日期，倒数从end_date开始
+            cnt = days
+            current_date = end_date_only
+    elif end_date_only == today:
+        # end_date是今天
+        if is_before_15:
+            # 15点之前：今天视为未来时间，倒数从昨天开始
+            cnt = days
+            current_date = end_date_only - timedelta(days=1)
+        else:
+            # 15点之后：今天视为过去时间，倒数从今天开始
+            cnt = days
+            current_date = end_date_only
+    else:
+        # end_date是过去日期，直接从end_date开始倒数
+        cnt = days
+        current_date = end_date_only
+
     # 安全检查：防止日期超出范围
     min_date = datetime(2000, 1, 1).date()  # 设置一个合理的最小日期
-    
+
     print(f"=== 计算日期范围 ===")
-    print(f"结束日期: {end_date.strftime('%Y-%m-%d')}")
+    print(f"结束日期: {end_date_only.strftime('%Y-%m-%d')}")
     print(f"需要倒数天数: {days}")
-    print(f"开始从: {current_date} 倒数")
     print(f"当前时间: {now.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"是否在15点之前: {is_before_15}")
+    print(f"开始倒数日期: {current_date}")
+    print(f"=== 日期范围计算完成 ===\n")
     
     # 创建股票数据日期集合，方便快速查询，只保留日期部分
     stock_dates = set()
+    earliest_stock_date = None
     for item in stock_data:
         try:
             date_str = item['date']
             item_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             stock_dates.add(item_date)
+            if earliest_stock_date is None or item_date < earliest_stock_date:
+                earliest_stock_date = item_date
         except Exception:
             continue
-    
-    
+
     # 最多计算1000天，防止无限循环
     max_iterations = 1000
     iteration = 0
-    
+
     while cnt > 0 and iteration < max_iterations:
         iteration += 1
-        # 检查是否是过去日期，如果当天是交易日，无论任何执行都默认今天是未来时间
-        # 根据是否在15点之前调整判断逻辑
-        if is_before_15:
-            # 15点之前，今天视为未来时间
-            if current_date < today:
-                # 检查是否有交易数据
-                if current_date in stock_dates:
-                    cnt -= 1
-                    print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
-                    # 找到交易日后，继续倒数
-                    current_date = current_date - timedelta(days=1)
-                else:
-                    # 视为节假日，直接跳过
+
+        if current_date < today:
+            # 过去日期：检查是否有交易数据
+            if current_date in stock_dates:
+                cnt -= 1
+                print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
+                # 如果还需要继续找，才递减日期
+                if cnt > 0:
                     current_date = current_date - timedelta(days=1)
             else:
-                # 跳过周末
-                if current_date.weekday() >= 5:
-                    current_date = current_date - timedelta(days=1)
-                    continue
-
-                cnt -= 1
-                # print(f"未来日期: {current_date}, 剩余天数: {cnt}")
-                # 继续倒数
+                # 视为节假日或周末，直接跳过
                 current_date = current_date - timedelta(days=1)
-        else:
-            # 15点之后，今天视为过去时间
-            if current_date <= today:
-                # 检查是否有交易数据
-                if current_date in stock_dates:
-                    cnt -= 1
-                    # print(f"找到交易日: {current_date}, 剩余天数: {cnt}")
-                    # 找到交易日后，继续倒数
-                    current_date = current_date - timedelta(days=1)
-                else:
-                    # 视为节假日，直接跳过
-                    current_date = current_date - timedelta(days=1)
-            else:
-                # 跳过周末
-                if current_date.weekday() >= 5:
-                    current_date = current_date - timedelta(days=1)
-                    continue
 
-                cnt -= 1
-                # print(f"未来日期: {current_date}, 剩余天数: {cnt}")
-                # 继续倒数
+            # 如果当前日期已经早于股票数据最早日期，且还需要更多交易日，
+            # 说明数据不足，直接使用最早日期
+            if earliest_stock_date is not None and current_date < earliest_stock_date and cnt > 0:
+                print(f"警告：数据不足，只找到 {days - cnt} 个交易日，使用 {earliest_stock_date} 作为起始日期")
+                current_date = earliest_stock_date
+                break
+        else:
+            # 今天或未来日期：跳过周末，直接计数
+            if current_date.weekday() >= 5:
+                current_date = current_date - timedelta(days=1)
+                continue
+
+            cnt -= 1
+            print(f"未来日期: {current_date}, 剩余天数: {cnt}")
+            # 如果还需要继续找，才递减日期
+            if cnt > 0:
                 current_date = current_date - timedelta(days=1)
     
     if iteration >= max_iterations:
@@ -696,8 +711,9 @@ def calculate_movement_space(stock_data, index_data, end_date, days, percentage)
     print(f"原始天数: {days}, 调整后天数: {days}")
     print(f"区间终点: {end_date.strftime('%Y-%m-%d')}")
     
-    # 调整天数：30日异动使用31天，10日异动使用11天
-    adjusted_days = days
+    # 调整天数：30日异动使用31天（含今天），10日异动使用11天（含今天）
+    # 意思是"30日异动"的范围是今天+之前30个交易日 = 31天
+    adjusted_days = days + 1
     # 找到区间起点
     start_date = find_date_range(end_date, adjusted_days, stock_data)
     
@@ -736,40 +752,69 @@ def calculate_movement_space(stock_data, index_data, end_date, days, percentage)
     # 找到最后一个交易日价格
     last_price = None
     last_date = None
-    # 获取当前时间，判断是否在15点之前
+    # 获取当前时间和日期
     now = datetime.now()
-    is_before_15 = now.hour < 15
-    end_date_only = end_date.date()  # 只保留日期部分
-    
-    print(f"判断执行时间: {now.strftime('%Y-%m-%d %H:%M:%S')}, 是否在15点之前: {is_before_15}")
-    
-    if is_before_15:
-        # 15点之前，今日作为未来时间，使用昨日作为最后交易日
-        # 计算昨日日期
-        yesterday = end_date_only - timedelta(days=1)
-        print(f"15点之前，使用昨日作为最后交易日: {yesterday}")
-        
-        # 找到昨日或之前最近的交易日
-        for item in reversed(stock_data):
-            try:
-                item_date_str = item['date']
-                item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
-                if item_date <= yesterday:
-                    last_price = item['close']
-                    last_date = item_date_str
-                    break
-            except ValueError:
-                continue
-    else:
-        # 15点之后，今日作为过去时间，使用今日作为最后交易日
-        print(f"15点之后，使用今日作为最后交易日: {end_date_only}")
-        
-        # 找到今日或之前最近的交易日
+    today = now.date()
+    end_date_only = end_date.date() if hasattr(end_date, 'date') else end_date
+
+    print(f"当前时间: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"分析日期: {end_date_only}, 今天: {today}")
+
+    if end_date_only < today:
+        # 分析的是过去日期，直接使用end_date作为最后交易日
+        print(f"分析过去日期，使用end_date作为最后交易日: {end_date_only}")
         for item in reversed(stock_data):
             try:
                 item_date_str = item['date']
                 item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
                 if item_date <= end_date_only:
+                    last_price = item['close']
+                    last_date = item_date_str
+                    break
+            except ValueError:
+                continue
+    elif end_date_only == today:
+        # 分析的是今天，根据当前时间判断
+        is_before_15 = now.hour < 15
+        print(f"分析今天，是否在15点之前: {is_before_15}")
+
+        if is_before_15:
+            # 15点之前，今日作为未来时间，使用昨日作为最后交易日
+            yesterday = end_date_only - timedelta(days=1)
+            print(f"15点之前，使用昨日作为最后交易日: {yesterday}")
+
+            for item in reversed(stock_data):
+                try:
+                    item_date_str = item['date']
+                    item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
+                    if item_date <= yesterday:
+                        last_price = item['close']
+                        last_date = item_date_str
+                        break
+                except ValueError:
+                    continue
+        else:
+            # 15点之后，今日作为过去时间，使用今日作为最后交易日
+            print(f"15点之后，使用今日作为最后交易日: {end_date_only}")
+
+            for item in reversed(stock_data):
+                try:
+                    item_date_str = item['date']
+                    item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
+                    if item_date <= end_date_only:
+                        last_price = item['close']
+                        last_date = item_date_str
+                        break
+                except ValueError:
+                    continue
+    else:
+        # end_date_only > today: 分析的是未来日期，使用today作为最后交易日
+        print(f"分析未来日期，使用今天作为最后交易日: {today}")
+        for item in reversed(stock_data):
+            try:
+                item_date_str = item['date']
+                item_date = datetime.strptime(item_date_str, '%Y-%m-%d').date()
+                if item_date <= today:
                     last_price = item['close']
                     last_date = item_date_str
                     break
